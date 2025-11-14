@@ -80,9 +80,13 @@ class DashboardScreen extends StatelessWidget {
                         1,
                         true,
                       ),
-                      _buildMenuItem(Icons.grid_view_outlined, 'Catalog', 2),
                       _buildMenuItem(Icons.grid_view_outlined, 'Category', 2),
-                      _buildMenuItem(Icons.people_outline, 'Customers', 3),
+                      _buildMenuItem(
+                        Icons.grid_view_outlined,
+                        'Sub Category',
+                        3,
+                      ),
+                      _buildMenuItem(Icons.people_outline, 'Customers', 4),
                       _buildMenuItem(
                         Icons.local_shipping_outlined,
                         'Shipping',

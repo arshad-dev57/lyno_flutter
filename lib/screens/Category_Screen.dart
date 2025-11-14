@@ -25,7 +25,7 @@ class CategoryScreen extends StatelessWidget {
             Icon(Icons.category_outlined, size: 22),
             SizedBox(width: 8),
             Text(
-              'Catalogue — Categories',
+              'SubCategories',
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
           ],
@@ -304,7 +304,7 @@ class CategoryScreen extends StatelessWidget {
                           final cat = c.categories[i];
                           return _CategoryCardPro(
                             c: cat,
-                            groupName: c.groupById[cat.group] ?? '—',
+                            // groupName: c.groupById[cat.group] ?? '—',
                             onDelete: () => _confirmDelete(cat, c),
                           );
                         },
@@ -720,20 +720,12 @@ class _EmptyState extends StatelessWidget {
 
 class _CategoryCardPro extends StatelessWidget {
   final Category c;
-  final String groupName;
   final VoidCallback onDelete;
 
-  const _CategoryCardPro({
-    super.key,
-    required this.c,
-    required this.groupName,
-    required this.onDelete,
-  });
+  const _CategoryCardPro({super.key, required this.c, required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
-    final isActive = c.isActive;
-
     return Material(
       color: Colors.white,
       elevation: 0,
@@ -741,65 +733,63 @@ class _CategoryCardPro extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: Color(0xFFDDDFE3)),
       ),
-      child: Container(
-        height: 486,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {},
-          hoverColor: const Color(0xFFF6F7F9),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: Row(
-              children: [
-                // thumbnail
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    color: const Color(0xFFF2F3F5),
-                    child: (c.image != null && c.image!.trim().isNotEmpty)
-                        ? Image.network(c.image!, fit: BoxFit.cover)
-                        : const Icon(
-                            Icons.image_outlined,
-                            color: Color(0xFF9CA3AF),
-                          ),
-                  ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {},
+        hoverColor: const Color(0xFFF6F7F9),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Row(
+            children: [
+              // image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  color: const Color(0xFFF2F3F5),
+                  child: (c.image != null && c.image!.trim().isNotEmpty)
+                      ? Image.network(c.image!, fit: BoxFit.cover)
+                      : const Icon(
+                          Icons.image_outlined,
+                          color: Color(0xFF9CA3AF),
+                        ),
                 ),
-                const SizedBox(width: 10),
+              ),
+              const SizedBox(width: 10),
 
-                // info
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      c.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
+              // title
+              Expanded(
+                child: Text(
+                  c.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.black,
+                  ),
                 ),
+              ),
 
-                IconButton(
-                  tooltip: 'Delete',
-                  onPressed: onDelete,
-                  style: IconButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFF1F2),
-                  ),
-                  icon: const Icon(
-                    Icons.delete_outline,
-                    size: 20,
-                    color: Color(0xFFEF4444),
-                  ),
+              const SizedBox(width: 6),
+
+              // delete
+              IconButton(
+                tooltip: 'Delete',
+                onPressed: onDelete,
+                style: IconButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFF1F2),
+                  minimumSize: const Size(32, 32),
+                  padding: EdgeInsets.zero,
                 ),
-              ],
-            ),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: Color(0xFFEF4444),
+                ),
+              ),
+            ],
           ),
         ),
       ),

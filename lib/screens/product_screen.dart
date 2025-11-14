@@ -634,65 +634,71 @@ class _AttributesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Attributes',
-                style: TextStyle(fontWeight: FontWeight.w600),
+    return Obx(() {
+      return Column(
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Attributes',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-            TextButton.icon(
-              onPressed: controller.addAttributeField,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Attribute'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Column(
-          children: List.generate(controller.attrKeyCtrls.length, (index) {
-            final keyCtrl = controller.attrKeyCtrls[index];
-            final valCtrl = controller.attrValCtrls[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: keyCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Key',
-                        border: OutlineInputBorder(),
+              TextButton.icon(
+                onPressed: controller.addAttributeField,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Attribute'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Column(
+            children: List.generate(controller.attrKeyCtrls.length, (index) {
+              final keyCtrl = controller.attrKeyCtrls[index];
+              final valCtrl = controller.attrValCtrls[index];
+
+              return Padding(
+                key: ValueKey(keyCtrl), // 🟢 unique key per row
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: ValueKey('attr_key_$index'),
+                        controller: keyCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Key',
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: valCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Value',
-                        border: OutlineInputBorder(),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        key: ValueKey('attr_val_$index'),
+                        controller: valCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Value',
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    onPressed: controller.attrKeyCtrls.length == 1
-                        ? null
-                        : () => controller.removeAttributeField(index),
-                    icon: const Icon(Icons.delete_outline),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ),
-      ],
-    );
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed: controller.attrKeyCtrls.length == 1
+                          ? null
+                          : () => controller.removeAttributeField(index),
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
+      );
+    });
   }
 }
 
@@ -731,9 +737,8 @@ class _ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // IMAGE + BADGES
           Expanded(
-            flex: 5,
+            flex: 4,
             child: Stack(
               children: [
                 Positioned.fill(

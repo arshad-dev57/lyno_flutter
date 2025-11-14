@@ -9,8 +9,6 @@ import 'package:http_parser/http_parser.dart';
 import '../models/category_group.dart';
 
 class CatalogueController extends GetxController {
-  // ======= CONFIG =======
-  // Apna base URL set karein (aapne pehle ApiService.baseUrl me 192.168... diya tha)
   static const String baseUrl = "http://192.168.100.189:5000";
   Uri _buildUri(String endpoint, [Map<String, dynamic>? query]) {
     final uri = Uri.parse("$baseUrl/$endpoint");
@@ -31,7 +29,6 @@ class CatalogueController extends GetxController {
     }
   }
 
-  // ======= STATE =======
   final groups = <CategoryGroup>[].obs;
 
   final isLoading = false.obs;

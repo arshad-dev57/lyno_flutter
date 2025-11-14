@@ -1,4 +1,4 @@
-// product_controller.dart
+// lib/controller/product_controller.dart
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -11,9 +11,6 @@ import 'package:lyno_cms/models/product_model.dart';
 
 class ProductController extends GetxController {
   static const String baseUrl = "http://192.168.100.189:5000";
-  // static const String productsEndpoint = "$baseUrl/products";
-  // agar tum /api/products use kar rahe ho:
-  // static const String productsEndpoint = "$baseUrl/api/products";
 
   // observables
   final products = <Product>[].obs;
@@ -68,6 +65,7 @@ class ProductController extends GetxController {
 
   @override
   void onClose() {
+    // main controllers
     titleCtrl.dispose();
     skuCtrl.dispose();
     brandCtrl.dispose();
@@ -85,6 +83,7 @@ class ProductController extends GetxController {
     seoDescCtrl.dispose();
     orderCtrl.dispose();
 
+    // attribute controllers (ONLY yahan dispose honge)
     for (final c in attrKeyCtrls) {
       c.dispose();
     }
@@ -137,11 +136,14 @@ class ProductController extends GetxController {
   void removeAttributeField(int index) {
     if (index < 0 || index >= attrKeyCtrls.length) return;
 
-    attrKeyCtrls[index].dispose();
-    attrValCtrls[index].dispose();
-
+    // ❗ Yahan dispose NAHI kar rahe, sirf list se nikal rahe
     attrKeyCtrls.removeAt(index);
     attrValCtrls.removeAt(index);
+
+    // hamesha kam se kam 1 row rahe
+    if (attrKeyCtrls.isEmpty) {
+      addAttributeField();
+    }
   }
 
   // ================= IMAGE PICKER HELPERS =================
@@ -149,7 +151,7 @@ class ProductController extends GetxController {
   Future<void> pickPrimaryImage() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
-      withData: true, // web ke liye important
+      withData: true,
     );
 
     if (result != null && result.files.isNotEmpty) {
@@ -259,10 +261,8 @@ class ProductController extends GetxController {
       "seoTitle": seoTitle.isEmpty ? null : seoTitle,
       "seoDescription": seoDesc.isEmpty ? null : seoDesc,
       "order": order,
-      // 🔹 category from dropdown (id)
       "category": catId,
       "categories": [catId],
-      // categorySlug optional hai, agar chaho to baad me add kar sakte ho
     };
 
     try {
@@ -273,24 +273,21 @@ class ProductController extends GetxController {
       http.Response resp;
 
       if (hasImage) {
-        // ---------- MULTIPART REQUEST ----------
         final uri = Uri.parse("$baseUrl/api/product/add");
         final request = http.MultipartRequest('POST', uri);
 
-        // fields as strings
         body.forEach((key, value) {
           if (value == null) return;
           if (value is String || value is num || value is bool) {
             request.fields[key] = value.toString();
           } else {
-            // Map / List -> JSON string
             request.fields[key] = jsonEncode(value);
           }
         });
 
         request.files.add(
           http.MultipartFile.fromBytes(
-            'image', // <-- multer.single('image')
+            'image',
             pickedImageBytes.value!,
             filename: pickedImageName.value.isEmpty
                 ? 'product.jpg'
@@ -302,7 +299,6 @@ class ProductController extends GetxController {
         final streamed = await request.send();
         resp = await http.Response.fromStream(streamed);
       } else {
-        // ----------- SIMPLE JSON (no image) -----------
         resp = await http.post(
           Uri.parse("$baseUrl/api/product/add"),
           headers: {'Content-Type': 'application/json'},
@@ -311,7 +307,6 @@ class ProductController extends GetxController {
       }
 
       if (resp.statusCode == 201) {
-        print(resp.body);
         final data = jsonDecode(resp.body);
         final createdJson = data['data'] as Map<String, dynamic>;
         final createdProduct = Product.fromJson(createdJson);
@@ -325,7 +320,6 @@ class ProductController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
         );
       } else {
-        print(resp.body);
         Get.snackbar(
           'Error',
           'Failed to add product (${resp.statusCode})',
@@ -338,7 +332,6 @@ class ProductController extends GetxController {
         'Failed to add product: $e',
         snackPosition: SnackPosition.BOTTOM,
       );
-      print(e);
     } finally {
       isSubmitting.value = false;
     }
@@ -367,18 +360,17 @@ class ProductController extends GetxController {
 
     selectedCategoryId.value = null;
 
-    // attributes reset
+    // attributes: sirf text clear karo, controllers zinda rakho
     for (final c in attrKeyCtrls) {
-      c.dispose();
+      c.clear();
     }
     for (final c in attrValCtrls) {
-      c.dispose();
+      c.clear();
     }
-    attrKeyCtrls.clear();
-    attrValCtrls.clear();
-    _ensureDynamicDefaults();
+    if (attrKeyCtrls.isEmpty) {
+      addAttributeField();
+    }
 
-    // image reset
     clearPickedImage();
   }
 }

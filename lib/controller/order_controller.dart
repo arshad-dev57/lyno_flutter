@@ -14,6 +14,12 @@ class OrdersController extends GetxController {
   final RxInt currentPage = 1.obs;
   final RxInt pageSize = 7.obs;
 
+  @override
+  void onInit() {
+    super.onInit();
+    ordersList(); // dashboard load hote hi orders fetch
+  }
+
   List<Datum> get filteredOrders {
     final q = searchQuery.value.trim().toLowerCase();
 
@@ -87,9 +93,11 @@ class OrdersController extends GetxController {
 
   Future<void> ordersList() async {
     try {
+      isLoading.value = true;
+
       final response = await ApiService.getRequest(
         context: Get.context!,
-        endpoint: "api/orders/all", // tumhara existing
+        endpoint: "api/orders/all",
       );
 
       if (response?.statusCode == 200) {
@@ -104,6 +112,8 @@ class OrdersController extends GetxController {
       }
     } catch (e) {
       print("ordersList error: $e");
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -121,10 +131,7 @@ class OrdersController extends GetxController {
 
       final res = await http.patch(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': 'Bearer $token', // agar route protected ho
-        },
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'status': status}),
       );
 
