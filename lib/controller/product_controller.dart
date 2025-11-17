@@ -10,7 +10,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:lyno_cms/models/product_model.dart';
 
 class ProductController extends GetxController {
-  static const String baseUrl = "http://192.168.100.189:5000";
+  static const String baseUrl = "https://lyno-shopping.vercel.app";
 
   // observables
   final products = <Product>[].obs;

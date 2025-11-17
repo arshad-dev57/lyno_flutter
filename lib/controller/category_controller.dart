@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import '../models/category_model.dart';
 
 class CategoryController extends GetxController {
-  static const String baseUrl = 'http://192.168.100.189:5000';
+  static const String baseUrl = 'https://lyno-shopping.vercel.app';
   static const String categoriesEndpoint = '/api/category/categories';
   static const String groupsEndpoint = '/api/category/category-groups';
 

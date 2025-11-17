@@ -9,7 +9,7 @@ import 'package:http_parser/http_parser.dart';
 import '../models/category_group.dart';
 
 class CatalogueController extends GetxController {
-  static const String baseUrl = "http://192.168.100.189:5000";
+  static const String baseUrl = "https://lyno-shopping.vercel.app";
   Uri _buildUri(String endpoint, [Map<String, dynamic>? query]) {
     final uri = Uri.parse("$baseUrl/$endpoint");
     if (query == null || query.isEmpty) return uri;
