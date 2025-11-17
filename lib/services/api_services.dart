@@ -10,16 +10,13 @@ class ApiService {
   static const String baseUrl = "https://lyno-shopping.vercel.app";
   // static const String baseUrl = "http://192.168.100.189:5000";
 
-  /// Default JSON headers (add auth here if needed)
   static Map<String, String> get _headers => {
     'Content-Type': 'application/json',
   };
 
-  /// Check internet connectivity (with toast)
   static Future<bool> hasInternet(BuildContext context) async {
     final result = await Connectivity().checkConnectivity();
 
-    // `checkConnectivity()` now returns a list on newer plugin versions
     late final List<ConnectivityResult> list;
     list = result;
 
@@ -44,7 +41,6 @@ class ApiService {
     return true;
   }
 
-  /// Build a Uri from base + endpoint (endpoint WITHOUT leading slash)
   static Uri _buildUri(String endpoint, [Map<String, dynamic>? query]) {
     final uri = Uri.parse("$baseUrl/$endpoint");
     if (query == null || query.isEmpty) return uri;
@@ -52,11 +48,6 @@ class ApiService {
     return uri.replace(queryParameters: qp);
   }
 
-  // ---------------------------------------------------------------------------
-  // Low-level HTTP methods (return raw http.Response?)
-  // ---------------------------------------------------------------------------
-
-  // ---------------- GET ----------------
   static Future<http.Response?> getRequest({
     required BuildContext context,
     required String endpoint,
@@ -87,7 +78,6 @@ class ApiService {
     }
   }
 
-  // ---------------- POST ----------------
   static Future<http.Response?> postRequest({
     required BuildContext context,
     required String endpoint,
@@ -118,7 +108,6 @@ class ApiService {
     }
   }
 
-  // ---------------- PATCH ----------------
   static Future<http.Response?> patchRequest({
     required BuildContext context,
     required String endpoint,
@@ -149,7 +138,6 @@ class ApiService {
     }
   }
 
-  // ---------------- DELETE ----------------
   static Future<http.Response?> deleteRequest({
     required BuildContext context,
     required String endpoint,
@@ -180,12 +168,9 @@ class ApiService {
     }
   }
 
-  // ---------------- MULTIPART UPLOAD (Flutter web OK) ----------------
-  /// Expects server to accept `fieldName` (default: "file"). Returns decoded JSON or null.
-  /// Example success shape: { success: true, url: "..."} or { data: { url: "..." } }
   static Future<Map<String, dynamic>?> uploadBytes({
     required BuildContext context,
-    required String endpoint, // e.g. "uploads" (without leading slash)
+    required String endpoint,
     required List<int> bytes,
     required String filename,
     String fieldName = 'file',
@@ -197,20 +182,12 @@ class ApiService {
     try {
       final req = http.MultipartRequest('POST', uri);
 
-      // Optional: add auth headers here (don't set content-type; MultipartRequest handles it)
-      // req.headers['Authorization'] = 'Bearer ...';
-
       if (fields != null && fields.isNotEmpty) {
         req.fields.addAll(fields);
       }
 
       req.files.add(
-        http.MultipartFile.fromBytes(
-          fieldName,
-          bytes,
-          filename: filename,
-          // contentType: MediaType('image', 'jpeg'), // optional
-        ),
+        http.MultipartFile.fromBytes(fieldName, bytes, filename: filename),
       );
 
       final streamed = await req.send().timeout(const Duration(seconds: 30));
@@ -238,11 +215,6 @@ class ApiService {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // JSON helpers & error handling
-  // ---------------------------------------------------------------------------
-
-  /// Safe JSON decode -> Map<String, dynamic>
   static Map<String, dynamic> safeDecode(String body) {
     try {
       final d = jsonDecode(body);
@@ -253,7 +225,6 @@ class ApiService {
     }
   }
 
-  /// Show generic server error toast with HTTP status
   static void showServerErrorToast(BuildContext context, http.Response res) {
     CustomToast.show(
       context: context,
@@ -262,7 +233,6 @@ class ApiService {
     );
   }
 
-  /// Internal helper: if response OK -> decoded Map; else show toast and return null
   static Map<String, dynamic>? _okOrToastJson(
     BuildContext context,
     http.Response? res,

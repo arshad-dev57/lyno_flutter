@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:lyno_cms/models/dashboard_model.dart';
 
 class DashboardController extends GetxController {
-  // API ka base URL
   static const String _baseUrl = 'https://lyno-shopping.vercel.app';
+  // static const String _baseUrl = "http://192.168.100.189:5000";
 
   static const String _statsEndpoint = '/api/dashboard/stats';
   static const String _recentOrdersEndpoint = '/api/dashboard/recent';
@@ -13,16 +13,12 @@ class DashboardController extends GetxController {
 
   final isLoading = false.obs;
   final errorMessage = ''.obs;
-
   final stats = Rxn<DashboardStats>();
-
   final RxInt selectedIndex = 0.obs;
-
   final RxDouble totalSales = 0.0.obs;
   final RxDouble totalRevenue = 0.0.obs;
   final RxInt totalOrders = 0.obs;
   final RxInt totalItems = 0.obs;
-
   final RxInt pendingOrders = 0.obs;
   final RxInt deliveredOrders = 0.obs;
   final RxInt cancelledOrders = 0.obs;
@@ -62,7 +58,7 @@ class DashboardController extends GetxController {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data =
             jsonDecode(response.body) as Map<String, dynamic>;
-
+        print(data);
         final dashboard = DashboardStats.fromJson(data);
         stats.value = dashboard;
 
@@ -76,8 +72,10 @@ class DashboardController extends GetxController {
         errorMessage.value =
             'Failed to load stats (code: ${response.statusCode})';
       }
+      print("stats loaded");
     } catch (e) {
       errorMessage.value = 'Failed to load stats: $e';
+      print("stats failed");
     } finally {
       isLoading.value = false;
     }
@@ -236,7 +234,6 @@ class DashboardRecentOrder {
   }
 }
 
-/// Top selling products model (dashboard)
 class DashboardTopProduct {
   final String productId;
   final String title;
