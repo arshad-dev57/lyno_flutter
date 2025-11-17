@@ -86,13 +86,12 @@ class DashboardScreen extends StatelessWidget {
                         'Sub Category',
                         3,
                       ),
-                      _buildMenuItem(Icons.people_outline, 'Customers', 4),
-                      _buildMenuItem(
-                        Icons.local_shipping_outlined,
-                        'Shipping',
-                        4,
-                      ),
-                      _buildMenuItem(Icons.payment_outlined, 'Payments', 5),
+                      _buildMenuItem(Icons.people_outline, 'products', 4),
+                      // _buildMenuItem(
+                      //   Icons.local_shipping_outlined,
+                      //   'Shipping',
+                      //   4,
+                      // ),
                       _buildMenuItem(
                         Icons.settings_outlined,
                         'Configuration',

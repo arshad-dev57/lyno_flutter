@@ -11,6 +11,7 @@ import 'package:lyno_cms/models/product_model.dart';
 
 class ProductController extends GetxController {
   static const String baseUrl = "https://lyno-shopping.vercel.app";
+  // static const String baseUrl = "http://localhost:5000";
 
   // observables
   final products = <Product>[].obs;
@@ -93,8 +94,6 @@ class ProductController extends GetxController {
 
     super.onClose();
   }
-
-  // ================= API: FETCH =================
 
   Future<void> fetchProducts() async {
     try {

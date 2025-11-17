@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lyno_cms/controller/dashboard_controller.dart';
 import 'package:lyno_cms/controller/order_controller.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({Key? key}) : super(key: key);
@@ -17,6 +18,10 @@ class HomeScreen extends StatelessWidget {
   static const Color kStroke = Color(0xFFE5E7EB);
   static const Color kMuted = Color(0xFF9CA3AF);
   static const Color kText = Color(0xFF111827);
+
+  // shimmer colors
+  static const Color kShimmerBase = Color(0xFFE5E7EB);
+  static const Color kShimmerHighlight = Color(0xFFF3F4F6);
 
   // Sale Analytic + Recent Orders same height
   static const double kAnalyticsCardHeight = 320;
@@ -33,7 +38,8 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Obx(() {
                 if (c.isLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
+                  // 🔥 Full page shimmer skeleton
+                  return _loadingSkeleton();
                 }
                 if (c.errorMessage.isNotEmpty) {
                   return Center(child: Text(c.errorMessage.value));
@@ -88,6 +94,86 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // ================= FULL PAGE LOADING SKELETON =================
+
+  Widget _loadingSkeleton() {
+    return SingleChildScrollView(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // LEFT
+          Expanded(
+            flex: 3,
+            child: Column(
+              children: [
+                // top stats 4 cards
+                Row(
+                  children: List.generate(4, (index) {
+                    return Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: index == 3 ? 0 : 16),
+                        child: _shimmerCard(height: 80),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 24),
+                _shimmerCard(height: kAnalyticsCardHeight),
+                const SizedBox(height: 24),
+                _shimmerCard(height: 140),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          // RIGHT
+          SizedBox(
+            width: 290,
+            child: Column(
+              children: [
+                _shimmerCard(height: kAnalyticsCardHeight),
+                const SizedBox(height: 18),
+                _shimmerCard(height: 200),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shimmerCard({required double height}) {
+    return Shimmer.fromColors(
+      baseColor: kShimmerBase,
+      highlightColor: kShimmerHighlight,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: kShimmerBase,
+          borderRadius: BorderRadius.circular(18),
+        ),
+      ),
+    );
+  }
+
+  Widget _shimmerBox({
+    double height = 12,
+    double width = double.infinity,
+    BorderRadius? borderRadius,
+  }) {
+    return Shimmer.fromColors(
+      baseColor: kShimmerBase,
+      highlightColor: kShimmerHighlight,
+      child: Container(
+        height: height,
+        width: width,
+        decoration: BoxDecoration(
+          color: kShimmerBase,
+          borderRadius: borderRadius ?? BorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -360,7 +446,6 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          // chart ko Expanded de diya taake parent height fill kare
           Expanded(
             child: LineChart(
               LineChartData(
@@ -369,8 +454,8 @@ class HomeScreen extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   horizontalInterval: 100,
-                  getDrawingHorizontalLine: (v) => FlLine(
-                    color: const Color.fromARGB(255, 243, 240, 240),
+                  getDrawingHorizontalLine: (v) => const FlLine(
+                    color: Color.fromARGB(255, 243, 240, 240),
                     strokeWidth: 1,
                   ),
                   drawVerticalLine: false,
@@ -483,8 +568,35 @@ class HomeScreen extends StatelessWidget {
   Widget _topSellingProductsCard() {
     return Obx(() {
       if (c.topProductsLoading.value) {
+        // shimmer version of table
         return _cardShell(
-          child: const Center(child: CircularProgressIndicator()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _shimmerBox(height: 16, width: 140),
+              const SizedBox(height: 16),
+              _shimmerBox(height: 32, borderRadius: BorderRadius.circular(12)),
+              const SizedBox(height: 8),
+              ...List.generate(
+                3,
+                (_) => Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 4,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(flex: 5, child: _shimmerBox(height: 14)),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 2, child: _shimmerBox(height: 14)),
+                      const SizedBox(width: 8),
+                      Expanded(flex: 3, child: _shimmerBox(height: 14)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       }
 
@@ -610,8 +722,53 @@ class HomeScreen extends StatelessWidget {
   Widget _orderRecentlyCard() {
     return Obx(() {
       if (c.recentOrdersLoading.value) {
+        // shimmer recent orders list
         return _cardShell(
-          child: const Center(child: CircularProgressIndicator()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _shimmerBox(height: 16, width: 120),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ListView.separated(
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 4,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _shimmerBox(
+                          height: 32,
+                          width: 32,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _shimmerBox(height: 12, width: 110),
+                              const SizedBox(height: 4),
+                              _shimmerBox(height: 10, width: 80),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _shimmerBox(
+                          height: 18,
+                          width: 52,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        const SizedBox(width: 8),
+                        _shimmerBox(height: 12, width: 38),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         );
       }
 
@@ -647,7 +804,6 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            // yahan se andar scroll
             Expanded(
               child: ListView.separated(
                 itemCount: orders.length,

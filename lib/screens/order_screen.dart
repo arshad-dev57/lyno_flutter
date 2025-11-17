@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lyno_cms/controller/order_controller.dart';
 import 'package:lyno_cms/models/order_model.dart';
+import 'package:shimmer/shimmer.dart';
 
 class OrdersScreen extends StatefulWidget {
   OrdersScreen({Key? key}) : super(key: key);
@@ -14,6 +15,10 @@ class OrdersScreen extends StatefulWidget {
   static const Color kStroke = Color(0xFFE5E7EB);
   static const Color kMuted = Color(0xFF6B7280);
   static const double kRadius = 12;
+
+  // shimmer
+  static const Color kShimmerBase = Color(0xFFE5E7EB);
+  static const Color kShimmerHighlight = Color(0xFFF3F4F6);
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -119,21 +124,6 @@ class _OrdersScreenState extends State<OrdersScreen> {
               ),
             ),
             const SizedBox(width: 16),
-            TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.visibility_outlined, size: 18),
-              label: const Text('View your shop'),
-              style: TextButton.styleFrom(
-                foregroundColor: OrdersScreen.kPrimary,
-              ),
-            ),
-            const SizedBox(width: 8),
-            IconButton(
-              tooltip: 'Notifications',
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {},
-            ),
-            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
@@ -178,39 +168,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
             style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600),
           ),
           const Spacer(),
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.help_outline, size: 18),
-            label: const Text('Help'),
-            style: _outlined(),
-          ),
-          const SizedBox(width: 10),
           OutlinedButton(
             onPressed: () {},
             style: _outlined(),
             child: const Text('Order statistics'),
           ),
           const SizedBox(width: 10),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: OrdersScreen.kPrimary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text('New customer'),
-          ),
         ],
       ),
     );
   }
 
-  // ================== ORDERS TABLE CARD ==================
-
+  // ================== MAIN TABLE CARD ==================
   Widget _ordersTableCard() {
     return Container(
       decoration: BoxDecoration(
@@ -231,211 +200,431 @@ class _OrdersScreenState extends State<OrdersScreen> {
           const Divider(height: 1, color: OrdersScreen.kStroke),
           Expanded(
             child: Obx(() {
-              final orders = controller.filteredOrders;
-              if (orders.isEmpty) {
-                return const Center(child: Text('No orders found'));
+              // loading state
+              if (controller.isLoading.value) {
+                return _ordersTableShimmer();
               }
 
-              return Scrollbar(
-                controller: _horizontalController,
-                thumbVisibility: true,
-                notificationPredicate: (n) => n.metrics.axis == Axis.horizontal,
-                child: SingleChildScrollView(
-                  controller: _horizontalController,
-                  scrollDirection: Axis.horizontal,
-                  child: SizedBox(
-                    width: _tableMinWidth,
-                    child: Column(
-                      children: [
-                        _tableHeader(),
-                        const Divider(height: 1, color: OrdersScreen.kStroke),
-                        Expanded(
-                          child: Scrollbar(
-                            controller: _verticalController,
-                            thumbVisibility: true,
-                            notificationPredicate: (n) =>
-                                n.metrics.axis == Axis.vertical,
-                            child: ListView.separated(
-                              controller: _verticalController,
-                              itemCount: orders.length,
-                              separatorBuilder: (_, __) => const Divider(
-                                height: 1,
-                                color: OrdersScreen.kStroke,
-                              ),
-                              itemBuilder: (context, i) {
-                                final order = orders[i];
-                                final isSelected = controller.selectedOrders
-                                    .contains(order.id);
-                                final zebra = i.isEven
-                                    ? Colors.white
-                                    : const Color(0xFFFCFCFD);
-
-                                final shortId = order.id.length > 8
-                                    ? '${order.id.substring(0, 6)}…'
-                                    : order.id;
-
-                                final addr = order.address;
-                                final addressLine = addr == null
-                                    ? '-'
-                                    : [
-                                            addr.line1,
-                                            addr.city,
-                                            addr.state,
-                                            addr.country,
-                                          ]
-                                          .where((e) => e.trim().isNotEmpty)
-                                          .join(', ');
-
-                                final itemsSummary = _itemsSummary(order.items);
-                                final payMethod =
-                                    order.payment?.method?.toUpperCase() ?? '-';
-                                final payStatus = order.payment?.status ?? '-';
-                                final created = order.createdAt
-                                    .toLocal()
-                                    .toString()
-                                    .split('.')
-                                    .first;
-
-                                return MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  child: InkWell(
-                                    onTap: () => _showOrderDetails(order),
-                                    hoverColor: const Color(0xFFF3F4F6),
-                                    child: Container(
-                                      color: isSelected
-                                          ? const Color(0xFFF0F7FF)
-                                          : zebra,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                        vertical: 14,
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Checkbox(
-                                            materialTapTargetSize:
-                                                MaterialTapTargetSize
-                                                    .shrinkWrap,
-                                            value: isSelected,
-                                            onChanged: (_) => controller
-                                                .toggleOrderSelection(order.id),
-                                            side: const BorderSide(
-                                              color: Color(0xFF9CA3AF),
-                                            ),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                          ),
-
-                                          _cell(shortId, _wId),
-                                          _cell(order.orderNo, _wOrderNo),
-                                          _cell(addr?.name ?? '-', _wCustomer),
-                                          _cell(addr?.phone ?? '-', _wPhone),
-
-                                          // Address
-                                          _cell(addressLine, _wAddress),
-
-                                          const SizedBox(width: 16),
-
-                                          // Items (visual gap between address & items)
-                                          _cell(itemsSummary, _wItems),
-
-                                          _cell(payMethod, _wPayment),
-                                          _cell(payStatus, _wPayStatus),
-
-                                          // Order status + dropdown
-                                          SizedBox(
-                                            width: _wOrderStatus,
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  child: _statusChip(
-                                                    order.status,
-                                                    double.infinity,
-                                                  ),
-                                                ),
-                                                PopupMenuButton<String>(
-                                                  tooltip: 'Change status',
-                                                  onSelected: (value) {
-                                                    controller
-                                                        .updateOrderStatus(
-                                                          orderId: order.id,
-                                                          status: value,
-                                                        );
-                                                  },
-                                                  itemBuilder: (_) => const [
-                                                    PopupMenuItem(
-                                                      value: 'pending',
-                                                      child: Text('Pending'),
-                                                    ),
-                                                    PopupMenuItem(
-                                                      value: 'completed',
-                                                      child: Text('Completed'),
-                                                    ),
-                                                  ],
-                                                  child: const Icon(
-                                                    Icons.arrow_drop_down,
-                                                    size: 20,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-
-                                          _cell(
-                                            _formatCurrency(
-                                              order.currency,
-                                              order.subTotal,
-                                            ),
-                                            _wSubtotal,
-                                            isMono: true,
-                                          ),
-                                          _cell(
-                                            order.deliveryFee.toString(),
-                                            _wDelivery,
-                                          ),
-                                          _cell(
-                                            order.serviceFee.toString(),
-                                            _wService,
-                                          ),
-                                          _cell(order.tax.toString(), _wTax),
-                                          _cell(
-                                            _formatCurrency(
-                                              order.currency,
-                                              order.grandTotal,
-                                            ),
-                                            _wGrand,
-                                            isMono: true,
-                                          ),
-                                          _cell(created, _wCreated),
-                                          SizedBox(
-                                            width: _wActions,
-                                            child: IconButton(
-                                              tooltip: 'View',
-                                              icon: const Icon(
-                                                Icons.more_vert_rounded,
-                                                size: 20,
-                                              ),
-                                              onPressed: () =>
-                                                  _showOrderDetails(order),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
+              final orders = controller.filteredOrders;
+              if (orders.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No orders found',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: OrdersScreen.kMuted,
                     ),
                   ),
-                ),
+                );
+              }
+
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  return Scrollbar(
+                    controller: _horizontalController,
+                    thumbVisibility: true,
+                    notificationPredicate: (n) =>
+                        n.metrics.axis == Axis.horizontal,
+                    child: SingleChildScrollView(
+                      controller: _horizontalController,
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(
+                        width: _tableMinWidth,
+                        // 🔥 yahan height parent ke equal
+                        height: constraints.maxHeight,
+                        child: Column(
+                          children: [
+                            _tableHeader(),
+                            const Divider(
+                              height: 1,
+                              color: OrdersScreen.kStroke,
+                            ),
+                            // 🔥 yahan Expanded use kiya, manual height nahi
+                            Expanded(
+                              child: Scrollbar(
+                                controller: _verticalController,
+                                thumbVisibility: true,
+                                notificationPredicate: (n) =>
+                                    n.metrics.axis == Axis.vertical,
+                                child: ListView.separated(
+                                  controller: _verticalController,
+                                  padding: EdgeInsets.zero,
+                                  itemCount: orders.length,
+                                  separatorBuilder: (_, __) => const Divider(
+                                    height: 1,
+                                    color: OrdersScreen.kStroke,
+                                  ),
+                                  itemBuilder: (context, i) {
+                                    final order = orders[i];
+                                    final isSelected = controller.selectedOrders
+                                        .contains(order.id);
+                                    final zebra = i.isEven
+                                        ? Colors.white
+                                        : const Color(0xFFFCFCFD);
+
+                                    final shortId = order.id.length > 8
+                                        ? '${order.id.substring(0, 6)}…'
+                                        : order.id;
+
+                                    final addr = order.address;
+                                    final addressLine = addr == null
+                                        ? '-'
+                                        : [
+                                                addr.line1,
+                                                addr.city,
+                                                addr.state,
+                                                addr.country,
+                                              ]
+                                              .where((e) => e.trim().isNotEmpty)
+                                              .join(', ');
+
+                                    final itemsSummary = _itemsSummary(
+                                      order.items,
+                                    );
+                                    final payMethod =
+                                        order.payment?.method?.toUpperCase() ??
+                                        '-';
+                                    final payStatus =
+                                        order.payment?.status ?? '-';
+                                    final created = order.createdAt
+                                        .toLocal()
+                                        .toString()
+                                        .split('.')
+                                        .first;
+
+                                    return MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      child: InkWell(
+                                        onTap: () => _showOrderDetails(order),
+                                        hoverColor: const Color(0xFFF3F4F6),
+                                        child: Container(
+                                          color: isSelected
+                                              ? const Color(0xFFF0F7FF)
+                                              : zebra,
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 14,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Checkbox(
+                                                materialTapTargetSize:
+                                                    MaterialTapTargetSize
+                                                        .shrinkWrap,
+                                                value: isSelected,
+                                                onChanged: (_) => controller
+                                                    .toggleOrderSelection(
+                                                      order.id,
+                                                    ),
+                                                side: const BorderSide(
+                                                  color: Color(0xFF9CA3AF),
+                                                ),
+                                                visualDensity:
+                                                    VisualDensity.compact,
+                                              ),
+                                              _cell(shortId, _wId),
+                                              _cell(order.orderNo, _wOrderNo),
+                                              _cell(
+                                                addr?.name ?? '-',
+                                                _wCustomer,
+                                              ),
+                                              _cell(
+                                                addr?.phone ?? '-',
+                                                _wPhone,
+                                              ),
+                                              _cell(addressLine, _wAddress),
+                                              const SizedBox(width: 16),
+                                              _cell(itemsSummary, _wItems),
+                                              _cell(payMethod, _wPayment),
+                                              _cell(payStatus, _wPayStatus),
+                                              SizedBox(
+                                                width: _wOrderStatus,
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: _statusChip(
+                                                        order.status,
+                                                        double.infinity,
+                                                      ),
+                                                    ),
+                                                    PopupMenuButton<String>(
+                                                      tooltip: 'Change status',
+                                                      onSelected: (value) {
+                                                        controller
+                                                            .updateOrderStatus(
+                                                              orderId: order.id,
+                                                              status: value,
+                                                            );
+                                                      },
+                                                      itemBuilder: (_) =>
+                                                          const [
+                                                            PopupMenuItem(
+                                                              value: 'pending',
+                                                              child: Text(
+                                                                'Pending',
+                                                              ),
+                                                            ),
+                                                            PopupMenuItem(
+                                                              value:
+                                                                  'completed',
+                                                              child: Text(
+                                                                'Completed',
+                                                              ),
+                                                            ),
+                                                          ],
+                                                      child: const Icon(
+                                                        Icons.arrow_drop_down,
+                                                        size: 20,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              _cell(
+                                                _formatCurrency(
+                                                  order.currency,
+                                                  order.subTotal,
+                                                ),
+                                                _wSubtotal,
+                                                isMono: true,
+                                              ),
+                                              _cell(
+                                                order.deliveryFee.toString(),
+                                                _wDelivery,
+                                              ),
+                                              _cell(
+                                                order.serviceFee.toString(),
+                                                _wService,
+                                              ),
+                                              _cell(
+                                                order.tax.toString(),
+                                                _wTax,
+                                              ),
+                                              _cell(
+                                                _formatCurrency(
+                                                  order.currency,
+                                                  order.grandTotal,
+                                                ),
+                                                _wGrand,
+                                                isMono: true,
+                                              ),
+                                              _cell(created, _wCreated),
+                                              SizedBox(
+                                                width: _wActions,
+                                                child: IconButton(
+                                                  tooltip: 'View',
+                                                  icon: const Icon(
+                                                    Icons.more_vert_rounded,
+                                                    size: 20,
+                                                  ),
+                                                  onPressed: () =>
+                                                      _showOrderDetails(order),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             }),
           ),
           _paginationBar(),
         ],
+      ),
+    );
+  }
+
+  // ================== SHIMMER TABLE ==================
+  Widget _ordersTableShimmer() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final tableHeight = constraints.maxHeight;
+
+        return Scrollbar(
+          controller: _horizontalController,
+          thumbVisibility: true,
+          notificationPredicate: (n) => n.metrics.axis == Axis.horizontal,
+          child: SingleChildScrollView(
+            controller: _horizontalController,
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              // 👈 fixed width
+              width: _tableMinWidth,
+              child: Column(
+                children: [
+                  // header skeleton
+                  Container(
+                    color: const Color(0xFFF9FAFB),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        _shimmerBox(height: 16, width: 18, radius: 4),
+                        const SizedBox(width: 8),
+                        _shimmerBox(height: 12, width: _wId - 20),
+                        _shimmerBox(height: 12, width: _wOrderNo - 20),
+                        _shimmerBox(height: 12, width: _wCustomer - 20),
+                        _shimmerBox(height: 12, width: _wPhone - 20),
+                        _shimmerBox(height: 12, width: _wAddress - 40),
+                        _shimmerBox(height: 12, width: _wItems - 40),
+                        _shimmerBox(height: 12, width: _wPayment - 20),
+                        _shimmerBox(height: 12, width: _wPayStatus - 20),
+                        _shimmerBox(height: 12, width: _wOrderStatus - 40),
+                        _shimmerBox(height: 12, width: _wSubtotal - 20),
+                        _shimmerBox(height: 12, width: _wDelivery - 20),
+                        _shimmerBox(height: 12, width: _wService - 20),
+                        _shimmerBox(height: 12, width: _wTax - 20),
+                        _shimmerBox(height: 12, width: _wGrand - 30),
+                        _shimmerBox(height: 12, width: _wCreated - 30),
+                        const SizedBox(width: _wActions),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1, color: OrdersScreen.kStroke),
+
+                  SizedBox(
+                    height: tableHeight - 48,
+                    child: ListView.separated(
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      itemCount: 7,
+                      separatorBuilder: (_, __) =>
+                          const Divider(height: 1, color: OrdersScreen.kStroke),
+                      itemBuilder: (context, index) {
+                        final zebra = index.isEven
+                            ? Colors.white
+                            : const Color(0xFFFCFCFD);
+                        return Container(
+                          color: zebra,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          child: Row(
+                            children: [
+                              _shimmerBox(height: 16, width: 18, radius: 4),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wId - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wOrderNo - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wCustomer - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wPhone - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wAddress - 40,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wItems - 40,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wPayment - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wPayStatus - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 20,
+                                width: _wOrderStatus - 50,
+                                radius: 999,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wSubtotal - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wDelivery - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wService - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wTax - 20,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wGrand - 30,
+                                radius: 6,
+                              ),
+                              _shimmerBox(
+                                height: 12,
+                                width: _wCreated - 30,
+                                radius: 6,
+                              ),
+                              _shimmerBox(height: 18, width: 24, radius: 6),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _shimmerBox({
+    required double height,
+    required double width,
+    double radius = 8,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Shimmer.fromColors(
+        baseColor: OrdersScreen.kShimmerBase,
+        highlightColor: OrdersScreen.kShimmerHighlight,
+        child: Container(
+          height: height,
+          width: width,
+          decoration: BoxDecoration(
+            color: OrdersScreen.kShimmerBase,
+            borderRadius: BorderRadius.circular(radius),
+          ),
+        ),
       ),
     );
   }
