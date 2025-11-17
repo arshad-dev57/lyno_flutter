@@ -28405,7 +28405,7 @@ s=1
 break
 case 1:return A.K(q,r)}})
 return A.L($async$a37,r)},
-aRv(a,b){var s=A.dz("http://192.168.100.189:5000/"+a,0,null)
+aRv(a,b){var s=A.dz("https://lyno-shopping.vercel.app/"+a,0,null)
 return s},
 L2(a,b){return A.aRw(a,b)},
 aRw(a,b){var s=0,r=A.M(t.Hk),q,p=2,o=[],n,m,l,k,j
@@ -91950,7 +91950,7 @@ var $async$wu=A.I(function(a0,a1){if(a0===1){o.push(a1)
 s=p}while(true)switch(s){case 0:p=4
 if(!B.b.q(A.b(["pending","completed"],t.s),b)){A.tT("Invalid status: "+b)
 s=1
-break}m=A.dz("http://192.168.100.189:5000/api/orders/update/"+a,0,null)
+break}m=A.dz("https://lyno-shopping.vercel.app/api/orders/update/"+a,0,null)
 g=t.N
 f=A.aj(["Content-Type","application/json"],g,g)
 s=7

@@ -7,8 +7,8 @@ import 'package:lyno_cms/widgets/toast_widget.dart';
 // import 'package:http_parser/http_parser.dart'; // (optional) if you want to set contentType on uploads
 
 class ApiService {
-  // static const String baseUrl = "https://lyno-shopping.vercel.app";
-  static const String baseUrl = "http://192.168.100.189:5000";
+  static const String baseUrl = "https://lyno-shopping.vercel.app";
+  // static const String baseUrl = "http://192.168.100.189:5000";
 
   /// Default JSON headers (add auth here if needed)
   static Map<String, String> get _headers => {
