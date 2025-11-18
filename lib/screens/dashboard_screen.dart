@@ -18,13 +18,11 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
-          // Sidebar
           Container(
             width: 250,
             color: Colors.white,
             child: Column(
               children: [
-                // Header
                 Container(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -47,14 +45,14 @@ class DashboardScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Body Shop',
+                            'LYNO ADMIN',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           Text(
-                            'Nicole (Admin)',
+                            'Admin',
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               color: Colors.grey[600],

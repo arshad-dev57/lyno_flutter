@@ -1,3 +1,5 @@
+// lib/controller/dashboard_controller.dart
+
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -10,6 +12,7 @@ class DashboardController extends GetxController {
   static const String _statsEndpoint = '/api/dashboard/stats';
   static const String _recentOrdersEndpoint = '/api/dashboard/recent';
   static const String _topProductsEndpoint = '/api/dashboard/top-products';
+  static const String _monthlyProfitsEndpoint = '/api/dashboard/monthdata';
 
   final isLoading = false.obs;
   final errorMessage = ''.obs;
@@ -35,17 +38,25 @@ class DashboardController extends GetxController {
   final topProductsLoading = false.obs;
   final topProductsError = ''.obs;
 
+  // ===== MONTHLY PROFITS (separate API) =====
+  final monthlyProfits = <MonthlyProfitItem>[].obs;
+  final monthlyProfitsLoading = false.obs;
+  final monthlyProfitsError = ''.obs;
+
   @override
   void onInit() {
     super.onInit();
     fetchDashboardStats();
     fetchRecentOrdersForDashboard();
     fetchTopProductsForDashboard();
+    fetchMonthlyProfits(); // 👈 NEW: monthly profits separate call
   }
 
   void changeScreen(int index) {
     selectedIndex.value = index;
   }
+
+  // ================== DASHBOARD STATS API ==================
 
   Future<void> fetchDashboardStats() async {
     try {
@@ -67,6 +78,7 @@ class DashboardController extends GetxController {
         totalOrders.value = dashboard.totalOrders;
         totalItems.value = dashboard.totalItems;
 
+        // Charts dummy data
         _loadDummyCharts();
       } else {
         errorMessage.value =
@@ -80,6 +92,47 @@ class DashboardController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  // ================== MONTHLY PROFITS API (NEW) ==================
+
+  Future<void> fetchMonthlyProfits() async {
+    try {
+      monthlyProfitsLoading.value = true;
+      monthlyProfitsError.value = '';
+
+      final uri = Uri.parse('$_baseUrl$_monthlyProfitsEndpoint');
+      final response = await http.get(uri);
+      print(response.body);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body =
+            jsonDecode(response.body) as Map<String, dynamic>;
+
+        if (body['success'] == true && body['data'] is List) {
+          final List list = body['data'] as List;
+          final mapped = list
+              .map(
+                (e) => MonthlyProfitItem(
+                  label: (e['label'] ?? '').toString(),
+                  value: (e['value'] as num?)?.toDouble() ?? 0.0,
+                ),
+              )
+              .toList();
+          monthlyProfits.assignAll(mapped);
+        } else {
+          monthlyProfitsError.value = 'Invalid monthly profits response';
+        }
+      } else {
+        monthlyProfitsError.value =
+            'Failed to load monthly profits (code: ${response.statusCode})';
+      }
+    } catch (e) {
+      monthlyProfitsError.value = 'Failed to load monthly profits: $e';
+    } finally {
+      monthlyProfitsLoading.value = false;
+    }
+  }
+
+  // ================== RECENT ORDERS API ==================
 
   Future<void> fetchRecentOrdersForDashboard() async {
     try {
@@ -264,4 +317,13 @@ class DashboardTopProduct {
       currency: (json['currency'] ?? '\$').toString(),
     );
   }
+}
+
+// ===== Monthly Profit Item model =====
+
+class MonthlyProfitItem {
+  final String label; // e.g. "Nov 2025"
+  final double value; // e.g. 42000.0
+
+  MonthlyProfitItem({required this.label, required this.value});
 }

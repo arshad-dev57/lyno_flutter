@@ -1,3 +1,5 @@
+// lib/screens/home_screen.dart
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -89,7 +91,7 @@ class HomeScreen extends StatelessWidget {
                   child: _orderRecentlyCard(), // 👈 API based + scroll
                 ),
                 const SizedBox(height: 18),
-                _monthlyProfitsCard(),
+                _monthlyProfitsCard(), // 👈 now DYNAMIC
               ],
             ),
           ),
@@ -969,109 +971,246 @@ class HomeScreen extends StatelessWidget {
     return status[0].toUpperCase() + status.substring(1);
   }
 
-  // ================= MONTHLY PROFITS (static) =================
-
+  // ================= MONTHLY PROFITS (DYNAMIC) =================
   Widget _monthlyProfitsCard() {
-    final sections = [
-      PieChartSectionData(
-        value: 40,
-        title: 'Shoes',
-        radius: 42,
-        titleStyle: GoogleFonts.inter(
-          fontSize: 8,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        color: const Color(0xFF4F46E5),
-      ),
-      PieChartSectionData(
-        value: 30,
-        title: 'Clothes',
-        radius: 38,
-        titleStyle: GoogleFonts.inter(
-          fontSize: 8,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        color: const Color(0xFF22C55E),
-      ),
-      PieChartSectionData(
-        value: 20,
-        title: 'Accessories',
-        radius: 34,
-        titleStyle: GoogleFonts.inter(
-          fontSize: 8,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        color: const Color(0xFFF97316),
-      ),
-      PieChartSectionData(
-        value: 10,
-        title: 'Others',
-        radius: 30,
-        titleStyle: GoogleFonts.inter(
-          fontSize: 8,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        color: const Color(0xFFEC4899),
-      ),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(top: 18),
-      decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Monthly Profits',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: kText,
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 150,
-            child: Center(
-              child: PieChart(
-                PieChartData(
-                  sections: sections,
-                  sectionsSpace: 2,
-                  centerSpaceRadius: 30,
-                  startDegreeOffset: -90,
-                ),
+    return Obx(() {
+      // loading
+      if (c.monthlyProfitsLoading.value) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(top: 18),
+          decoration: BoxDecoration(
+            color: kCard,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 6,
-            children: [
-              _legendDot(color: const Color(0xFF4F46E5), label: 'Shoes'),
-              _legendDot(color: const Color(0xFF22C55E), label: 'Clothes'),
-              _legendDot(color: const Color(0xFFF97316), label: 'Accessories'),
-              _legendDot(color: const Color(0xFFEC4899), label: 'Others'),
             ],
           ),
-        ],
-      ),
-    );
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _shimmerBox(height: 14, width: 120),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 150,
+                child: Center(
+                  child: _shimmerBox(
+                    height: 120,
+                    width: 120,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                runSpacing: 6,
+                children: List.generate(
+                  4,
+                  (_) => _shimmerBox(height: 10, width: 60),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // error
+      if (c.monthlyProfitsError.isNotEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(top: 18),
+          decoration: BoxDecoration(
+            color: kCard,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Text(
+            c.monthlyProfitsError.value,
+            style: GoogleFonts.inter(fontSize: 12, color: Colors.red),
+          ),
+        );
+      }
+
+      final data = c.monthlyProfits;
+      if (data.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(top: 18),
+          decoration: BoxDecoration(
+            color: kCard,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Text(
+            'No monthly profits data',
+            style: GoogleFonts.inter(fontSize: 12, color: kMuted),
+          ),
+        );
+      }
+
+      // currency & total
+      final currency = c.stats.value?.currency ?? '\$';
+      final total = data.fold<double>(0, (sum, item) => sum + item.value);
+
+      // colors for slices
+      final List<Color> colors = const [
+        Color(0xFF4F46E5),
+        Color(0xFF22C55E),
+        Color(0xFFF97316),
+        Color(0xFFEC4899),
+        Color(0xFF06B6D4),
+        Color(0xFF8B5CF6),
+      ];
+
+      final sections = List.generate(data.length, (index) {
+        final item = data[index];
+        final color = colors[index % colors.length];
+        final radius = 30.0 + (index * 4);
+        final percent = total > 0
+            ? ((item.value / total) * 100).round()
+            : 0; // %
+
+        return PieChartSectionData(
+          value: item.value,
+          title: '$percent%',
+          radius: radius,
+          titleStyle: GoogleFonts.inter(
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          color: color,
+        );
+      });
+
+      return Container(
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(top: 18),
+        decoration: BoxDecoration(
+          color: kCard,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Monthly Profits',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: kText,
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // 👇 Center total value inside chart
+            SizedBox(
+              height: 150,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  PieChart(
+                    PieChartData(
+                      sections: sections,
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 30,
+                      startDegreeOffset: -90,
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Total',
+                        style: GoogleFonts.inter(fontSize: 10, color: kMuted),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _formatCurrency(total, currency),
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: kText,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Legend with label + amount
+            Wrap(
+              spacing: 10,
+              runSpacing: 6,
+              children: List.generate(data.length, (index) {
+                final item = data[index];
+                final color = colors[index % colors.length];
+                final valueText = _formatCurrency(item.value, currency);
+
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.label,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: kText,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          valueText,
+                          style: GoogleFonts.inter(fontSize: 9, color: kMuted),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _legendDot({required Color color, required String label}) {
@@ -1088,8 +1227,6 @@ class HomeScreen extends StatelessWidget {
       ],
     );
   }
-
-  // ================= HELPERS =================
 
   String _formatCurrency(double value, String currency) {
     final rounded = value.round();

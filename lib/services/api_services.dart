@@ -4,7 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:lyno_cms/widgets/toast_widget.dart';
-// import 'package:http_parser/http_parser.dart'; // (optional) if you want to set contentType on uploads
+// import 'package:http_parser/http_parser.dart';
 
 class ApiService {
   static const String baseUrl = "https://lyno-shopping.vercel.app";
