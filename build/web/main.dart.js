@@ -93567,7 +93567,7 @@ r.pG(A.a2(["type",1],s,s))}r.IR()
 if(r.w)r.pF("io client disconnect")
 r.Ij()
 this.tC()},
-aa0(){var s,r,q,p,o,n,m,l,k,j,i,h=this,g="http://192.168.100.189:5000",f=null,e="query",d=t.N,c=t.z,b=A.o(d,c)
+aa0(){var s,r,q,p,o,n,m,l,k,j,i,h=this,g="https://lyno-shopping.vercel.app",f=null,e="query",d=t.N,c=t.z,b=A.o(d,c)
 b.n(0,"transports",A.b(["websocket"],t.s))
 b.n(0,"autoConnect",!1)
 s=A.c8(g,0,f)
@@ -93576,7 +93576,7 @@ q=s.gdK()
 p=$.aGw.ab(r)&&$.aGw.h(0,r).d.ab(q)
 o=J.d(b.h(0,"forceNew"),!0)||J.d(b.h(0,"force new connection"),!0)||!1===b.h(0,"multiplex")||p
 n=A.c9()
-if(o){$.aVK().aQ(B.u,"ignoring socket cache for http://192.168.100.189:5000",f,f)
+if(o){$.aVK().aQ(B.u,"ignoring socket cache for https://lyno-shopping.vercel.app",f,f)
 n.b=A.aOr(b,g)}else{m=$.aGw.h(0,r)
 if(m==null){m=A.aOr(b,g)
 $.aGw.n(0,r,m)}n.b=m}if(s.gmv().length!==0&&b.h(0,e)==null)b.n(0,e,s.gmv())
@@ -93634,7 +93634,7 @@ B8(){var s=0,r=A.M(t.H),q=1,p=[],o=[],n=this,m,l,k,j,i,h,g,f,e,d,c
 var $async$B8=A.I(function(a,b){if(a===1){p.push(b)
 s=q}while(true)switch(s){case 0:q=3
 n.db.sk(!0)
-m=A.c8("http://192.168.100.189:5000/api/chat/users",0,null)
+m=A.c8("https://lyno-shopping.vercel.app/api/chat/users",0,null)
 s=6
 return A.H(A.kx(m,n.gu8()),$async$B8)
 case 6:l=b
@@ -93678,7 +93678,7 @@ vI(){var s=0,r=A.M(t.H),q=1,p=[],o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b
 var $async$vI=A.I(function(a,a0){if(a===1){p.push(a0)
 s=q}while(true)switch(s){case 0:q=3
 n.dx.sk(!0)
-m=A.c8("http://192.168.100.189:5000/api/chat/conversations?userId="+n.ay,0,null)
+m=A.c8("https://lyno-shopping.vercel.app/api/chat/conversations?userId="+n.ay,0,null)
 s=6
 return A.H(A.kx(m,n.gu8()),$async$vI)
 case 6:l=a0
@@ -93746,7 +93746,7 @@ vk(a){return this.aq5(a)},
 aq5(a){var s=0,r=A.M(t.H),q=1,p=[],o=this,n,m,l,k,j,i,h,g,f,e,d,c
 var $async$vk=A.I(function(b,a0){if(b===1){p.push(a0)
 s=q}while(true)switch(s){case 0:q=3
-n=A.c8("http://192.168.100.189:5000/api/chat/conversation",0,null)
+n=A.c8("https://lyno-shopping.vercel.app/api/chat/conversation",0,null)
 f=t.N
 m=A.a2(["receiverId",a.a,"senderId",o.ay],f,f)
 e=o.gu8()
@@ -93799,7 +93799,7 @@ arH(a){var s=0,r=A.M(t.H),q=1,p=[],o=[],n=this,m,l,k,j,i,h,g,f,e,d,c,b
 var $async$B3=A.I(function(a0,a1){if(a0===1){p.push(a1)
 s=q}while(true)switch(s){case 0:q=3
 n.dy.sk(!0)
-m=A.c8("http://192.168.100.189:5000/api/chat/"+a+"/messages?page=1&limit=50",0,null)
+m=A.c8("https://lyno-shopping.vercel.app/api/chat/"+a+"/messages?page=1&limit=50",0,null)
 s=6
 return A.H(A.kx(m,n.gu8()),$async$B3)
 case 6:l=a1
@@ -93848,7 +93848,7 @@ m.fr.sk(!0)
 f=t.N
 l=A.a2(["conversationId",b.a,"receiverId",b.d.a,"text",c,"senderId",m.ay],f,f)
 d.eX(B.bw)
-k=A.c8("http://192.168.100.189:5000/api/chat/message",0,null)
+k=A.c8("https://lyno-shopping.vercel.app/api/chat/message",0,null)
 d=m.gu8()
 s=7
 return A.H(A.aL6(k,B.a1.nF(l,null),d),$async$tt)
