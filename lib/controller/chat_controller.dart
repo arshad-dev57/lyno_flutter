@@ -121,20 +121,15 @@ class ChatController extends GetxController {
   Future<void> fetchUsers() async {
     try {
       isLoadingUsers.value = true;
-
       final uri = Uri.parse('$baseUrl/api/chat/users');
-
       final res = await http.get(uri, headers: _headers);
-
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
         final List rawList = (body['data'] ?? body['users'] ?? []) as List;
-
         final list = rawList
             .map((e) => ChatUserMini.fromJson(Map<String, dynamic>.from(e)))
             .where((u) => u.id != currentUserId)
             .toList();
-
         users.assignAll(list);
       } else {
         debugPrint('fetchUsers error: ${res.statusCode} ${res.body}');
@@ -146,7 +141,6 @@ class ChatController extends GetxController {
     }
   }
 
-  // ---------- API: CONVERSATIONS ----------
   Future<void> fetchConversations() async {
     try {
       isLoadingConversations.value = true;
