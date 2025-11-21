@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:lyno_cms/controller/chat_controller.dart';
 import 'package:lyno_cms/controller/dashboard_controller.dart';
-
 import 'package:lyno_cms/screens/Category_Screen.dart';
 import 'package:lyno_cms/screens/ads_screen.dart';
 import 'package:lyno_cms/screens/banner_screen.dart';
@@ -17,8 +16,6 @@ import 'package:lyno_cms/screens/product_screen.dart';
 class DashboardScreen extends StatelessWidget {
   final DashboardController controller = Get.put(DashboardController());
 
-  /// ChatController global register (permanent)
-  /// YAHAN REAL TOKEN + USER ID SET KARO
   final ChatController chatController = Get.put(
     ChatController(
       token:
@@ -35,7 +32,6 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
-          // ---------------- LEFT SIDEBAR ----------------
           Container(
             width: 250,
             color: Colors.white,
@@ -85,8 +81,6 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 const Divider(height: 1),
-
-                // ---------------- MENU ITEMS ----------------
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -98,11 +92,7 @@ class DashboardScreen extends StatelessWidget {
                         1,
                         true,
                       ),
-                      _buildMenuItem(
-                        Icons.chat_bubble_outline,
-                        'Chats',
-                        7,
-                      ), // chat tab
+                      _buildMenuItem(Icons.chat_bubble_outline, 'Chats', 7),
                       _buildMenuItem(Icons.grid_view_outlined, 'Category', 2),
                       _buildMenuItem(
                         Icons.grid_view_outlined,
@@ -121,7 +111,6 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
 
-                // ---------------- STORAGE USAGE ----------------
                 Container(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -130,34 +119,34 @@ class DashboardScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Storage usage:',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                          Text(
-                            '25%',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          // Text(
+                          //   'Storage usage:',
+                          //   style: GoogleFonts.inter(
+                          //     fontSize: 12,
+                          //     color: Colors.grey[700],
+                          //   ),
+                          // ),
+                          // Text(
+                          //   '25%',
+                          //   style: GoogleFonts.inter(
+                          //     fontSize: 12,
+                          //     fontWeight: FontWeight.w600,
+                          //   ),
+                          // ),
                         ],
                       ),
                       const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: 0.25,
-                          backgroundColor: Colors.grey[200],
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            Color(0xFF008060),
-                          ),
-                          minHeight: 6,
-                        ),
-                      ),
+                      // ClipRRect(
+                      //   borderRadius: BorderRadius.circular(4),
+                      //   child: LinearProgressIndicator(
+                      //     value: 0.25,
+                      //     backgroundColor: Colors.grey[200],
+                      //     valueColor: const AlwaysStoppedAnimation<Color>(
+                      //       Color(0xFF008060),
+                      //     ),
+                      //     minHeight: 6,
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -165,7 +154,6 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
 
-          // ---------------- RIGHT MAIN CONTENT ----------------
           Expanded(
             child: Obx(() {
               switch (controller.selectedIndex.value) {
@@ -182,11 +170,7 @@ class DashboardScreen extends StatelessWidget {
                 case 6:
                   return AdsScreen();
                 case 7:
-                  // 🔥 Chat Screen (GetX + Socket integrated)
-                  return ChatScreen(
-                    // token: chatController.token,
-                    // currentUserId: chatController.currentUserId,
-                  );
+                  return ChatScreen();
                 default:
                   return HomeScreen();
               }

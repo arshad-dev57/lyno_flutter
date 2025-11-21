@@ -1,3 +1,6 @@
+// lib/controller/chat_controller.dart
+
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -9,7 +12,7 @@ import '../models/chat_models.dart';
 
 class ChatController extends GetxController {
   // Apna backend URL
-  static const String baseUrl = 'https://lyno-shopping.vercel.app';
+  static const String baseUrl = 'http://192.168.100.189:5000';
 
   final String token;
   final String currentUserId;
@@ -29,6 +32,9 @@ class ChatController extends GetxController {
 
   final messageController = TextEditingController();
 
+  final RxBool isOtherTyping = false.obs;
+  Timer? _typingTimer;
+
   late IO.Socket socket;
 
   @override
@@ -42,11 +48,11 @@ class ChatController extends GetxController {
   @override
   void onClose() {
     messageController.dispose();
+    _typingTimer?.cancel();
     socket.dispose();
     super.onClose();
   }
 
-  // ---------- SOCKET ----------
   void _connectSocket() {
     socket = IO.io(
       baseUrl,
@@ -67,39 +73,57 @@ class ChatController extends GetxController {
       debugPrint('Socket disconnected');
     });
 
-    // Receiver ke liye
     socket.on('newMessage', (data) {
       final msg = MessageModel.fromJson(Map<String, dynamic>.from(data));
       _handleIncomingMessage(msg);
     });
 
-    // Sender ke liye
     socket.on('messageSent', (data) {
       final msg = MessageModel.fromJson(Map<String, dynamic>.from(data));
       _handleIncomingMessage(msg);
     });
+
+    socket.on('typing', (data) {
+      final map = Map<String, dynamic>.from(data ?? {});
+      final convoId = map['conversationId']?.toString();
+      final fromId = map['from']?.toString();
+
+      if (selectedConversation.value?.id == convoId &&
+          selectedConversation.value?.participant.id == fromId) {
+        isOtherTyping.value = true;
+      }
+    });
+
+    socket.on('stopTyping', (data) {
+      final map = Map<String, dynamic>.from(data ?? {});
+      final convoId = map['conversationId']?.toString();
+      final fromId = map['from']?.toString();
+
+      if (selectedConversation.value?.id == convoId &&
+          selectedConversation.value?.participant.id == fromId) {
+        isOtherTyping.value = false;
+      }
+    });
   }
 
-  /// yahan hum:
-  /// - current conversation ke messages me DEDUPE+ADD karte hain
-  /// - conversations list me lastMessage update karte hain
+  /// common handler: dedupe + conversations update
   void _handleIncomingMessage(MessageModel msg) {
     final currentConvoId = selectedConversation.value?.id;
 
+    // 1) messages list me sirf tab add karo jab woh convo open ho
     if (currentConvoId == msg.conversationId) {
       final alreadyIndex = messages.indexWhere(
         (m) => m.id == msg.id,
-      ); // <== IMPORTANT
+      ); // dedupe by id
 
       if (alreadyIndex == -1) {
         messages.add(msg);
       } else {
-        // optional: update if same id
         messages[alreadyIndex] = msg;
       }
     }
 
-    // 2) Conversations list update
+    // 2) conversations list ka last message update
     final idx = conversations.indexWhere((c) => c.id == msg.conversationId);
     if (idx != -1) {
       final updated = conversations[idx].copyWith(
@@ -121,6 +145,7 @@ class ChatController extends GetxController {
   Future<void> fetchUsers() async {
     try {
       isLoadingUsers.value = true;
+
       final uri = Uri.parse('$baseUrl/api/chat/users');
       final res = await http.get(uri, headers: _headers);
       if (res.statusCode == 200) {
@@ -160,9 +185,7 @@ class ChatController extends GetxController {
               (e) => ConversationModel.fromJson(Map<String, dynamic>.from(e)),
             )
             .toList();
-
         conversations.assignAll(parsed);
-
         if (parsed.isNotEmpty && selectedConversation.value == null) {
           selectConversation(parsed.first);
         }
@@ -178,6 +201,7 @@ class ChatController extends GetxController {
 
   Future<void> selectConversation(ConversationModel convo) async {
     selectedConversation.value = convo;
+    isOtherTyping.value = false; // naya convo -> reset typing flag
     await fetchMessages(convo.id);
   }
 
@@ -268,6 +292,41 @@ class ChatController extends GetxController {
     }
   }
 
+  /// user typing handler (TextField.onChanged se call hoga)
+  void handleInputChange(String value) {
+    final convo = selectedConversation.value;
+    if (convo == null) return;
+
+    final toId = convo.participant.id;
+
+    if (value.isEmpty) {
+      socket.emit('stopTyping', {
+        'conversationId': convo.id,
+        'to': toId,
+        'from': currentUserId,
+      });
+      _typingTimer?.cancel();
+      return;
+    }
+
+    // typing event
+    socket.emit('typing', {
+      'conversationId': convo.id,
+      'to': toId,
+      'from': currentUserId,
+    });
+
+    // agar 2 sec tak kuch type na kare to stopTyping auto
+    _typingTimer?.cancel();
+    _typingTimer = Timer(const Duration(seconds: 2), () {
+      socket.emit('stopTyping', {
+        'conversationId': convo.id,
+        'to': toId,
+        'from': currentUserId,
+      });
+    });
+  }
+
   /// POST /api/chat/message { conversationId, receiverId, text, senderId }
   Future<void> sendMessage() async {
     final text = messageController.text.trim();
@@ -300,9 +359,17 @@ class ChatController extends GetxController {
           Map<String, dynamic>.from(data['data']),
         );
 
-        // 🔥 ab yahan direct list me add nahi kar rahe
-        // sirf common handler se jaayega jo duplicate check karega
+        // common handler (dedupe + list update)
         _handleIncomingMessage(msg);
+
+        // message gaya -> typing band
+        final toId = convo.participant.id;
+        socket.emit('stopTyping', {
+          'conversationId': convo.id,
+          'to': toId,
+          'from': currentUserId,
+        });
+        _typingTimer?.cancel();
       } else {
         debugPrint('sendMessage error: ${res.statusCode} ${res.body}');
       }
