@@ -2,19 +2,19 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../models/category_group.dart';
-import '../controller/catalogue_controller.dart';
+import 'package:lyno_cms/models/Ads_Models.dart';
+import '../controller/ads_controller.dart';
 
-class CatalogueScreen extends StatelessWidget {
-  CatalogueScreen({super.key});
-  final c = Get.put(CatalogueController());
+class AdsScreen extends StatelessWidget {
+  AdsScreen({super.key});
+  final c = Get.put(AdsController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       appBar: AppBar(
-        title: const Text('Categories'),
+        title: const Text('Ads'),
         elevation: 0,
         backgroundColor: const Color(0xFFF5F5F7),
         foregroundColor: Colors.black,
@@ -25,7 +25,7 @@ class CatalogueScreen extends StatelessWidget {
               final bool isDesktop = width >= 1080;
               if (!isDesktop) {
                 return IconButton(
-                  tooltip: 'Add group',
+                  tooltip: 'Add ad',
                   icon: const Icon(Icons.add),
                   onPressed: () => _openCreateDialog(context),
                 );
@@ -52,7 +52,7 @@ class CatalogueScreen extends StatelessWidget {
   // ============= LAYOUTS =============
 
   Widget _buildCompactLayout() {
-    return _buildGroupsPane(isWide: false);
+    return _buildAdsPane(isWide: false);
   }
 
   Widget _buildDesktopLayout() {
@@ -66,7 +66,7 @@ class CatalogueScreen extends StatelessWidget {
           child: ListView(shrinkWrap: true, children: [_buildFormColumn()]),
         ),
         const SizedBox(width: 16),
-        Expanded(child: _buildGroupsPane(isWide: isWide)),
+        Expanded(child: _buildAdsPane(isWide: isWide)),
       ],
     );
   }
@@ -112,23 +112,22 @@ class CatalogueScreen extends StatelessWidget {
       children: [
         _SectionCard(
           icon: Icons.add_box_outlined,
-          title: 'Create Group',
-          subtitle:
-              'Add a category group with title and image for your catalogue.',
+          title: 'Create Ad',
+          subtitle: 'Add a new ad with title and image.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const _FieldLabel('Title'),
               const SizedBox(height: 6),
               TextField(
-                decoration: _inputDecor('e.g. “Fiction Books”').copyWith(
+                decoration: _inputDecor('e.g. "Summer Sale"').copyWith(
                   prefixIcon: const Icon(
                     Icons.title,
                     size: 20,
                     color: Color(0xFF4B5563),
                   ),
                 ),
-                onChanged: (v) => c.title.value = v,
+                onChanged: (v) => c.adTitle.value = v,
               ),
             ],
           ),
@@ -137,22 +136,22 @@ class CatalogueScreen extends StatelessWidget {
         _SectionCard(
           icon: Icons.image_outlined,
           title: 'Image',
-          subtitle: 'Upload a file or paste a direct URL for the group hero.',
+          subtitle: 'Upload a file or paste a direct URL for the ad image.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _FieldLabel('Image URL (optional)'),
-              const SizedBox(height: 6),
-              TextField(
-                decoration: _inputDecor('https://…').copyWith(
-                  prefixIcon: const Icon(
-                    Icons.link,
-                    size: 20,
-                    color: Color(0xFF4B5563),
-                  ),
-                ),
-                onChanged: (v) => c.heroImageUrl.value = v,
-              ),
+              // const _FieldLabel('Image URL (optional)'),
+              // const SizedBox(height: 6),
+              // TextField(
+              //   decoration: _inputDecor('https://…').copyWith(
+              //     prefixIcon: const Icon(
+              //       Icons.link,
+              //       size: 20,
+              //       color: Color(0xFF4B5563),
+              //     ),
+              //   ),
+              //   onChanged: (v) => c.adImageUrl.value = v,
+              // ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
@@ -190,13 +189,10 @@ class CatalogueScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _ImagePreview(
-                heroUrlRx: c.heroImageUrl,
-                bytesRx: c.pickedBytesRx,
-              ),
+              _ImagePreview(heroUrlRx: c.adImageUrl, bytesRx: c.pickedBytesRx),
               const SizedBox(height: 8),
               const Text(
-                'Note: Backend needs a file when creating a group. URL is optional.',
+                'Note: Image is required when creating an ad.',
                 style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
               ),
             ],
@@ -207,10 +203,10 @@ class CatalogueScreen extends StatelessWidget {
           () => SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: c.saving.value
+              onPressed: c.isSaving.value
                   ? null
                   : () async {
-                      if (c.title.value.trim().isEmpty) {
+                      if (c.adTitle.value.trim().isEmpty) {
                         Get.snackbar(
                           'Missing',
                           'Title is required',
@@ -218,10 +214,10 @@ class CatalogueScreen extends StatelessWidget {
                         );
                         return;
                       }
-                      await c.createGroup();
+                      await c.createBanner();
                       onSaved?.call();
                     },
-              icon: c.saving.value
+              icon: c.isSaving.value
                   ? const SizedBox(
                       height: 18,
                       width: 18,
@@ -232,7 +228,7 @@ class CatalogueScreen extends StatelessWidget {
                     )
                   : const Icon(Icons.save_outlined, size: 18),
               label: Text(
-                c.saving.value ? '' : 'Save Group',
+                c.isSaving.value ? '' : 'Save Ad',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
@@ -257,15 +253,15 @@ class CatalogueScreen extends StatelessWidget {
     );
   }
 
-  // ============= RIGHT: GROUPS GRID (REUSED) =============
+  // ============= RIGHT: ADS GRID (REUSED) =============
 
-  Widget _buildGroupsPane({required bool isWide}) {
+  Widget _buildAdsPane({required bool isWide}) {
     return Obx(() {
       if (c.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (c.groups.isEmpty) {
-        return const Center(child: Text('No category groups yet.'));
+      if (c.ads.isEmpty) {
+        return const Center(child: Text('No ads yet.'));
       }
 
       final cross = isWide ? 3 : 2;
@@ -278,15 +274,14 @@ class CatalogueScreen extends StatelessWidget {
           mainAxisSpacing: 16,
           childAspectRatio: 0.82,
         ),
-        itemCount: c.groups.length,
+        itemCount: c.ads.length,
         itemBuilder: (_, i) {
-          final g = c.groups[i];
-          return _GroupCard(
-            g: g,
-            onToggle: () =>
-                c.updateGroup(g, newIsActive: !g.isActive, withImage: false),
-            onDelete: () => _confirmDelete(g, c),
-            onEdit: () => _openEditDialog(g, c),
+          final ad = c.ads[i];
+          return _AdCard(
+            ad: ad,
+            onToggle: () => c.toggleActiveStatus(ad.id, !ad.isActive),
+            onDelete: () => _confirmDelete(ad, c),
+            onEdit: () => _openEditDialog(ad, c),
           );
         },
       );
@@ -294,26 +289,29 @@ class CatalogueScreen extends StatelessWidget {
   }
 
   // ===== dialogs =====
-  void _confirmDelete(CategoryGroup g, CatalogueController c) {
+  void _confirmDelete(AdsModels ad, AdsController c) {
     Get.defaultDialog(
       title: 'Delete',
-      middleText:
-          'Delete "${g.title}"?\n(Note: backend blocks if categories exist)',
+      middleText: 'Delete "${ad.title}"?',
       textCancel: 'Cancel',
       textConfirm: 'Delete',
       confirmTextColor: Colors.white,
       onConfirm: () async {
         Get.back();
-        await c.deleteGroup(g);
+        await c.deleteAd(ad.id);
       },
     );
   }
 
-  void _openEditDialog(CategoryGroup g, CatalogueController c) {
-    final t = TextEditingController(text: g.title);
-    final url = TextEditingController(text: g.heroImage ?? '');
-    final urlVN = ValueNotifier<String>(url.text);
-    url.addListener(() => urlVN.value = url.text);
+  void _openEditDialog(AdsModels ad, AdsController c) {
+    final titleController = TextEditingController(text: ad.title);
+    final urlController = TextEditingController(text: ad.imageUrl ?? '');
+    final urlVN = ValueNotifier<String>(urlController.text);
+    urlController.addListener(() => urlVN.value = urlController.text);
+
+    // Set current values to controller
+    c.adTitle.value = ad.title;
+    c.adImageUrl.value = ad.imageUrl ?? '';
 
     Get.dialog(
       Dialog(
@@ -324,15 +322,20 @@ class CatalogueScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Edit Group',
+                  'Edit Ad',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: t, decoration: _inputDecor('Title')),
+                TextField(
+                  controller: titleController,
+                  decoration: _inputDecor('Title'),
+                  onChanged: (v) => c.adTitle.value = v,
+                ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: url,
-                  decoration: _inputDecor('Hero Image URL'),
+                  controller: urlController,
+                  decoration: _inputDecor('Image URL'),
+                  onChanged: (v) => c.adImageUrl.value = v,
                 ),
                 const SizedBox(height: 8),
                 Align(
@@ -360,29 +363,19 @@ class CatalogueScreen extends StatelessWidget {
                     const Spacer(),
                     Obx(
                       () => ElevatedButton(
-                        onPressed: c.saving.value
+                        onPressed: c.isSaving.value
                             ? null
                             : () async {
-                                final hasPicked =
-                                    c.pickedBytesRx.value != null &&
-                                    c.pickedBytesRx.value!.isNotEmpty;
-                                if (hasPicked) {
-                                  await c.updateGroup(
-                                    g,
-                                    newTitle: t.text.trim(),
-                                    withImage: true,
-                                  );
-                                } else {
-                                  await c.updateGroup(
-                                    g,
-                                    newTitle: t.text.trim(),
-                                    withImage: false,
-                                  );
-                                }
+                                final hasPicked = c.pickedBytesRx.value != null;
+                                await c.updateAd(
+                                  ad,
+                                  newTitle: titleController.text.trim(),
+                                  withImage: hasPicked,
+                                );
                                 c.clearPicked();
                                 Get.back();
                               },
-                        child: c.saving.value
+                        child: c.isSaving.value
                             ? const SizedBox(
                                 height: 18,
                                 width: 18,
@@ -466,7 +459,6 @@ class _SectionCard extends StatelessWidget {
                   child: Icon(icon, size: 18, color: const Color(0xFF111827)),
                 ),
                 const SizedBox(width: 10),
-                // IMPORTANT: Expanded to avoid horizontal overflow
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,15 +635,15 @@ class _DialogImagePreview extends StatelessWidget {
   }
 }
 
-class _GroupCard extends StatelessWidget {
-  final CategoryGroup g;
+class _AdCard extends StatelessWidget {
+  final AdsModels ad;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
 
-  const _GroupCard({
+  const _AdCard({
     super.key,
-    required this.g,
+    required this.ad,
     required this.onToggle,
     required this.onDelete,
     required this.onEdit,
@@ -679,8 +671,8 @@ class _GroupCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(18),
                 ),
-                child: (g.heroImage != null && g.heroImage!.trim().isNotEmpty)
-                    ? Image.network(g.heroImage!, fit: BoxFit.cover)
+                child: (ad.imageUrl != null && ad.imageUrl!.trim().isNotEmpty)
+                    ? Image.network(ad.imageUrl!, fit: BoxFit.cover)
                     : Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
@@ -701,16 +693,25 @@ class _GroupCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Text(
-                g.title,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF111827),
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    ad.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: onDelete,
+                    child: Icon(Icons.delete, color: Colors.red),
+                  ),
+                ],
               ),
             ),
           ],

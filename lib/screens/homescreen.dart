@@ -30,34 +30,44 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: kBg,
-      child: Column(
-        children: [
-          _topBar(),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Obx(() {
-                if (c.isLoading.value) {
-                  // 🔥 Full page shimmer skeleton
-                  return _loadingSkeleton();
-                }
-                if (c.errorMessage.isNotEmpty) {
-                  return Center(child: Text(c.errorMessage.value));
-                }
-                return _body();
-              }),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final bool isMobile = width < 700;
+        final bool isTablet = width >= 700 && width < 1100;
+
+        return Container(
+          color: kBg,
+          child: Column(
+            children: [
+              _topBar(isMobile: isMobile),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(isMobile ? 12 : 24),
+                  child: Obx(() {
+                    if (c.isLoading.value) {
+                      return _loadingSkeleton(isMobile: isMobile);
+                    }
+                    if (c.errorMessage.isNotEmpty) {
+                      return Center(child: Text(c.errorMessage.value));
+                    }
+
+                    if (isMobile) return _bodyMobile();
+                    if (isTablet) return _bodyTablet();
+                    return _bodyDesktop();
+                  }),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // ================= BODY =================
+  // ================= BODY (DESKTOP) =================
 
-  Widget _body() {
+  Widget _bodyDesktop() {
     return SingleChildScrollView(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,9 +110,111 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // ================= BODY (TABLET) =================
+
+  Widget _bodyTablet() {
+    return SingleChildScrollView(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // LEFT
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _statsRow(),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: kAnalyticsCardHeight,
+                  child: _salesAnalyticsCard(),
+                ),
+                const SizedBox(height: 20),
+                _topSellingProductsCard(),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // RIGHT (slightly smaller)
+          SizedBox(
+            width: 260,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  height: kAnalyticsCardHeight,
+                  child: _orderRecentlyCard(),
+                ),
+                const SizedBox(height: 16),
+                _monthlyProfitsCard(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ================= BODY (MOBILE) =================
+
+  Widget _bodyMobile() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _statsRowMobile(),
+          const SizedBox(height: 16),
+          SizedBox(height: kAnalyticsCardHeight, child: _salesAnalyticsCard()),
+          const SizedBox(height: 16),
+          SizedBox(height: kAnalyticsCardHeight, child: _orderRecentlyCard()),
+          const SizedBox(height: 16),
+          _monthlyProfitsCard(),
+          const SizedBox(height: 16),
+          _topSellingProductsCard(),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
   // ================= FULL PAGE LOADING SKELETON =================
 
-  Widget _loadingSkeleton() {
+  Widget _loadingSkeleton({required bool isMobile}) {
+    if (isMobile) {
+      // Mobile: stacked skeleton
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            // top stats 2x2 style
+            Row(
+              children: [
+                Expanded(child: _shimmerCard(height: 80)),
+                const SizedBox(width: 12),
+                Expanded(child: _shimmerCard(height: 80)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _shimmerCard(height: 80)),
+                const SizedBox(width: 12),
+                Expanded(child: _shimmerCard(height: 80)),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _shimmerCard(height: kAnalyticsCardHeight),
+            const SizedBox(height: 16),
+            _shimmerCard(height: kAnalyticsCardHeight),
+            const SizedBox(height: 16),
+            _shimmerCard(height: 200),
+            const SizedBox(height: 16),
+            _shimmerCard(height: 180),
+          ],
+        ),
+      );
+    }
+
+    // Desktop / Tablet version (original)
     return SingleChildScrollView(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,7 +294,84 @@ class HomeScreen extends StatelessWidget {
 
   // ================= TOP BAR =================
 
-  Widget _topBar() {
+  Widget _topBar({required bool isMobile}) {
+    if (isMobile) {
+      // Mobile: search on top, filters + icons below
+      return Container(
+        color: kCard,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 40,
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search here',
+                  hintStyle: GoogleFonts.inter(fontSize: 13, color: kMuted),
+                  prefixIcon: const Icon(Icons.search, size: 18),
+                  isDense: true,
+                  filled: true,
+                  fillColor: const Color(0xFFF3F4F6),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: kCard,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: kStroke),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        size: 14,
+                        color: kMuted,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'May–Nov 2025',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: kText,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.settings_outlined, size: 20),
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.notifications_none_rounded, size: 22),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Desktop / Tablet top bar
     return Container(
       color: kCard,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -300,6 +489,67 @@ class HomeScreen extends StatelessWidget {
     });
   }
 
+  // Mobile version: 2x2 grid stats
+
+  Widget _statsRowMobile() {
+    return Obx(() {
+      final sales = c.totalSales.value;
+      final orders = c.totalOrders.value;
+      final items = c.totalItems.value;
+      final revenue = c.totalRevenue.value;
+      final currency = c.stats.value?.currency ?? '\$';
+
+      final card1 = _statCard(
+        icon: Icons.shopping_bag_outlined,
+        title: 'Total Sales',
+        value: _formatCurrency(sales, currency),
+        color: const Color(0xFFFFEEF1),
+        iconColor: const Color(0xFFE11D48),
+      );
+      final card2 = _statCard(
+        icon: Icons.receipt_long_outlined,
+        title: 'Total Orders',
+        value: _formatInt(orders),
+        color: const Color(0xFFEFF6FF),
+        iconColor: const Color(0xFF2563EB),
+      );
+      final card3 = _statCard(
+        icon: Icons.inventory_2_outlined,
+        title: 'Total Items',
+        value: _formatInt(items),
+        color: const Color(0xFFECFEFF),
+        iconColor: const Color(0xFF0891B2),
+      );
+      final card4 = _statCard(
+        icon: Icons.attach_money,
+        title: 'Total Revenue',
+        value: _formatCurrency(revenue, currency),
+        color: const Color(0xFFEEF2FF),
+        iconColor: kPrimary,
+      );
+
+      return Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: card1),
+              const SizedBox(width: 8),
+              Expanded(child: card2),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: card3),
+              const SizedBox(width: 8),
+              Expanded(child: card4),
+            ],
+          ),
+        ],
+      );
+    });
+  }
+
   Widget _statCard({
     required IconData icon,
     required String title,
@@ -307,52 +557,50 @@ class HomeScreen extends StatelessWidget {
     required Color color,
     required Color iconColor,
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-        decoration: BoxDecoration(
-          color: kCard,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(12),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.inter(fontSize: 11, color: kMuted),
               ),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(fontSize: 11, color: kMuted),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: kText,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: kText,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

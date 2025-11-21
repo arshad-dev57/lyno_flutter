@@ -10,314 +10,338 @@ class CategoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = MediaQuery.of(context).size.width > 1140;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final bool isMobile = width < 700;
+        final bool isDesktop = width >= 1140; // desktop only
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        titleSpacing: 0,
-        title: Row(
-          children: const [
-            SizedBox(width: 16),
-            Icon(Icons.category_outlined, size: 22),
-            SizedBox(width: 8),
-            Text(
-              'SubCategories',
-              style: TextStyle(fontWeight: FontWeight.w700),
+        return Scaffold(
+          backgroundColor: const Color(0xFFF3F4F6),
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            titleSpacing: 0,
+            title: Row(
+              children: const [
+                SizedBox(width: 16),
+                Icon(Icons.category_outlined, size: 22),
+                SizedBox(width: 8),
+                Text(
+                  'SubCategories',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          Obx(
-            () => Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: _HeaderStatChip(
-                icon: Icons.folder_outlined,
-                label: 'Groups',
-                value: '${c.groups.length}',
-              ),
+            actions: [
+              if (!isDesktop)
+                IconButton(
+                  tooltip: 'Add category',
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _openCategoryDialog(context),
+                )
+              else ...[
+                Obx(
+                  () => Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _HeaderStatChip(
+                      icon: Icons.folder_outlined,
+                      label: 'Groups',
+                      value: '${c.groups.length}',
+                    ),
+                  ),
+                ),
+                Obx(
+                  () => Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: _HeaderStatChip(
+                      icon: Icons.list_alt_outlined,
+                      label: 'Categories',
+                      value: '${c.categories.length}',
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: isDesktop
+                  ? _buildDesktopLayout()
+                  : _buildCompactLayout(isMobile: isMobile),
             ),
           ),
-          Obx(
-            () => Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: _HeaderStatChip(
-                icon: Icons.list_alt_outlined,
-                label: 'Categories',
-                value: '${c.categories.length}',
-              ),
-            ),
+        );
+      },
+    );
+  }
+
+  // ============= LAYOUTS =============
+
+  /// Mobile + Tablet: sirf categories pane full-width,
+  /// add ke liye AppBar ka + button dialog open karega
+  Widget _buildCompactLayout({required bool isMobile}) {
+    return _buildCategoriesPane(isWide: false);
+  }
+
+  /// Desktop: left form, right grid
+  Widget _buildDesktopLayout() {
+    const bool isWide = true; // desktop per 3 columns etc.
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ================= Left: FORM =================
+        const SizedBox(width: 520, child: _FormPaneWrapper()),
+
+        const SizedBox(width: 16),
+
+        // ================= Right: GRID =================
+        Expanded(child: _buildCategoriesPane(isWide: isWide)),
+      ],
+    );
+  }
+
+  // ============= CATEGORY DIALOG (MOBILE + TABLET) =============
+
+  void _openCategoryDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogCtx) {
+        final w = MediaQuery.of(dialogCtx).size.width;
+        final bool small = w < 500;
+        final inset = EdgeInsets.symmetric(
+          horizontal: small ? 16 : 80,
+          vertical: small ? 24 : 40,
+        );
+
+        return Dialog(
+          insetPadding: inset,
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
-        ],
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ================= Left: FORM =================
-              SizedBox(
-                width: isWide ? 520 : 440,
-                child: ListView(
-                  children: [
-                    _Pane(
-                      title: 'Create Category',
-                      subtitle:
-                          'Add a category with title, group, sort order and image.',
-                      leading: const Icon(Icons.add_box_outlined),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _FieldLabel('Title'),
-                          TextField(
-                            decoration: _inputDecor(
-                              'e.g. “Fiction Books”',
-                            ).copyWith(prefixIcon: const Icon(Icons.title)),
-                            onChanged: (v) => c.title.value = v,
-                          ),
-                          const SizedBox(height: 14),
-
-                          Obx(
-                            () => _FieldLabelRow(
-                              'Group',
-                              trailing: c.groups.isEmpty
-                                  ? const _SoftBadge(
-                                      icon: Icons.info_outline_rounded,
-                                      text: 'No groups found',
-                                    )
-                                  : null,
-                            ),
-                          ),
-                          Obx(
-                            () => DropdownButtonFormField<String>(
-                              value: c.selectedGroupId.value,
-                              items: c.groups
-                                  .map(
-                                    (g) => DropdownMenuItem(
-                                      value: g.id,
-                                      child: Text(g.title),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (v) => c.selectedGroupId.value = v,
-                              decoration: _inputDecor('Select group').copyWith(
-                                prefixIcon: const Icon(Icons.folder_open),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Row(
-                          //   children: [
-                          //     Expanded(
-                          //       child: Column(
-                          //         crossAxisAlignment: CrossAxisAlignment.start,
-                          //         children: [
-                          //           _FieldLabel('Order'),
-                          //           TextField(
-                          //             decoration: _inputDecor('0').copyWith(
-                          //               prefixIcon: const Icon(
-                          //                 Icons.filter_list,
-                          //               ),
-                          //             ),
-                          //             keyboardType: TextInputType.number,
-                          //             onChanged: (v) =>
-                          //                 c.order.value = int.tryParse(v) ?? 0,
-                          //           ),
-                          //         ],
-                          //       ),
-                          //     ),
-                          //     const SizedBox(width: 12),
-                          //     Expanded(
-                          //       child: Column(
-                          //         crossAxisAlignment: CrossAxisAlignment.start,
-                          //         children: [
-                          //           // _FieldLabel('Status'),
-                          //           // _SegmentSwitch(
-                          //           //   valueListenable: c.isActive,
-                          //           //   onChanged: (v) => c.isActive.value = v,
-                          //           // ),
-                          //         ],
-                          //       ),
-                          //     ),
-                          //   ],
-                          // ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    _Pane(
-                      title: 'Image',
-                      subtitle: 'Upload a file or paste a direct URL.',
-                      leading: const Icon(Icons.image_outlined),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // _FieldLabel('Image URL (optional)'),
-                          // TextField(
-                          //   decoration: _inputDecor(
-                          //     'https://…',
-                          //   ).copyWith(prefixIcon: const Icon(Icons.link)),
-                          //   onChanged: (v) => c.imageUrl.value = v,
-                          // ),
-                          // const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              ElevatedButton.icon(
-                                onPressed: () => c.pickWebImage(),
-                                icon: const Icon(Icons.upload_file),
-                                label: const Text('Choose File'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.black,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Obx(
-                                () => c.pickedBytesRx.value != null
-                                    ? TextButton.icon(
-                                        onPressed: () => c.clearPicked(),
-                                        icon: const Icon(Icons.close),
-                                        label: const Text('Clear'),
-                                      )
-                                    : const SizedBox.shrink(),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          _ImagePreview(
-                            bytesRx: c.pickedBytesRx,
-                            urlRx: c.imageUrl,
-                          ),
-                          const SizedBox(height: 8),
-                          // const _HelpText(
-                          //   'Backend expects the file field name "image". If no file is picked, URL will be used.',
-                          // ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    Obx(
-                      () => SizedBox(
-                        height: 46,
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: c.saving.value
-                              ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.save_outlined),
-                          label: Text(
-                            c.saving.value ? 'Saving…' : 'Save Category',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          onPressed: c.saving.value
-                              ? null
-                              : () async {
-                                  if (c.title.value.trim().isEmpty ||
-                                      c.selectedGroupId.value == null) {
-                                    Get.snackbar(
-                                      'Missing',
-                                      'Title and Group are required',
-                                    );
-                                    return;
-                                  }
-                                  await c.createCategory();
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+              child: SingleChildScrollView(
+                child: _buildFormPaneColumn(
+                  // dialog mein save hone ke baad close bhi ho jaaye
+                  onSaved: () => Navigator.of(dialogCtx).pop(),
                 ),
               ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-              const SizedBox(width: 16),
+  // ============= LEFT FORM CONTENT (REUSED) =============
 
-              // ================= Right: GRID =================
-              Expanded(
-                child: Obx(() {
-                  if (c.isLoading.value) {
-                    return const _Pane(
-                      title: 'Loading',
-                      subtitle: 'Fetching categories…',
-                      child: SizedBox(
-                        height: 180,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-                    );
-                  }
-                  if (c.categories.isEmpty) {
-                    return const _Pane(
-                      title: 'Categories',
-                      subtitle: 'No categories yet',
-                      child: _EmptyState(),
-                    );
-                  }
-
-                  final cross = isWide ? 3 : 2;
-                  return SingleChildScrollView(
-                    child: _Pane(
-                      title: 'Categories',
-                      subtitle: 'All categories listed below',
-                      leading: const Icon(Icons.view_module_outlined),
-                      trailing: _SoftBadge(
-                        icon: Icons.countertops_outlined,
-                        text: 'Total: ${c.categories.length}',
-                      ),
-                      child: GridView.builder(
-                        padding: const EdgeInsets.all(4),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: cross,
-                          crossAxisSpacing: 14,
-                          mainAxisSpacing: 14,
-                          mainAxisExtent: 106,
-                        ),
-                        itemCount: c.categories.length,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (_, i) {
-                          final cat = c.categories[i];
-                          return _CategoryCardPro(
-                            c: cat,
-                            // groupName: c.groupById[cat.group] ?? '—',
-                            onDelete: () => _confirmDelete(cat, c),
-                          );
-                        },
-                      ),
-                    ),
-                  );
-                }),
+  /// ye pure create + image + save wala column hai
+  /// desktop pe side me, mobile/tablet pe dialog ke andar reuse hoga
+  Widget _buildFormPaneColumn({VoidCallback? onSaved}) {
+    return Column(
+      children: [
+        _Pane(
+          title: 'Create Category',
+          subtitle: 'Add a category with title, group, sort order and image.',
+          leading: const Icon(Icons.add_box_outlined),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _FieldLabel('Title'),
+              TextField(
+                decoration: _inputDecor(
+                  'e.g. “Fiction Books”',
+                ).copyWith(prefixIcon: const Icon(Icons.title)),
+                onChanged: (v) => c.title.value = v,
               ),
+              const SizedBox(height: 14),
+
+              Obx(
+                () => _FieldLabelRow(
+                  'Group',
+                  trailing: c.groups.isEmpty
+                      ? const _SoftBadge(
+                          icon: Icons.info_outline_rounded,
+                          text: 'No groups found',
+                        )
+                      : null,
+                ),
+              ),
+              Obx(
+                () => DropdownButtonFormField<String>(
+                  value: c.selectedGroupId.value,
+                  items: c.groups
+                      .map(
+                        (g) =>
+                            DropdownMenuItem(value: g.id, child: Text(g.title)),
+                      )
+                      .toList(),
+                  onChanged: (v) => c.selectedGroupId.value = v,
+                  decoration: _inputDecor(
+                    'Select group',
+                  ).copyWith(prefixIcon: const Icon(Icons.folder_open)),
+                ),
+              ),
+              const SizedBox(height: 14),
             ],
           ),
         ),
-      ),
+
+        const SizedBox(height: 16),
+
+        _Pane(
+          title: 'Image',
+          subtitle: 'Upload a file or paste a direct URL.',
+          leading: const Icon(Icons.image_outlined),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => c.pickWebImage(),
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('Choose File'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Obx(
+                    () => c.pickedBytesRx.value != null
+                        ? TextButton.icon(
+                            onPressed: () => c.clearPicked(),
+                            icon: const Icon(Icons.close),
+                            label: const Text('Clear'),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _ImagePreview(bytesRx: c.pickedBytesRx, urlRx: c.imageUrl),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        Obx(
+          () => SizedBox(
+            height: 46,
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: c.saving.value
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: Text(
+                c.saving.value ? 'Saving…' : 'Save Category',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              onPressed: c.saving.value
+                  ? null
+                  : () async {
+                      if (c.title.value.trim().isEmpty ||
+                          c.selectedGroupId.value == null) {
+                        Get.snackbar('Missing', 'Title and Group are required');
+                        return;
+                      }
+                      await c.createCategory();
+                      // dialog ke case me close, desktop me null hoga to ignore
+                      onSaved?.call();
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  // ============= RIGHT CATEGORIES PANE (REUSED) =============
+
+  Widget _buildCategoriesPane({required bool isWide}) {
+    return Obx(() {
+      if (c.isLoading.value) {
+        return const _Pane(
+          title: 'Loading',
+          subtitle: 'Fetching categories…',
+          child: SizedBox(
+            height: 180,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
+      }
+      if (c.categories.isEmpty) {
+        return const _Pane(
+          title: 'Categories',
+          subtitle: 'No categories yet',
+          child: _EmptyState(),
+        );
+      }
+
+      // Grid columns: wide desktop = 3, otherwise 2
+      final cross = isWide ? 3 : 2;
+
+      return SingleChildScrollView(
+        child: _Pane(
+          title: 'Categories',
+          subtitle: 'All categories listed below',
+          leading: const Icon(Icons.view_module_outlined),
+          trailing: _SoftBadge(
+            icon: Icons.countertops_outlined,
+            text: 'Total: ${c.categories.length}',
+          ),
+          child: GridView.builder(
+            padding: const EdgeInsets.all(4),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cross,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              mainAxisExtent: 106,
+            ),
+            itemCount: c.categories.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemBuilder: (_, i) {
+              final cat = c.categories[i];
+              return _CategoryCardPro(
+                c: cat,
+                onDelete: () => _confirmDelete(cat, c),
+              );
+            },
+          ),
+        ),
+      );
+    });
   }
 
   void _confirmDelete(Category cat, CategoryController ctrl) {
@@ -331,6 +355,21 @@ class CategoryScreen extends StatelessWidget {
         Get.back();
         await ctrl.deleteCategory(cat);
       },
+    );
+  }
+}
+
+/// ============ Helper widget: form in desktop left pane ============
+class _FormPaneWrapper extends StatelessWidget {
+  const _FormPaneWrapper();
+
+  @override
+  Widget build(BuildContext context) {
+    final screen = context.findAncestorWidgetOfExactType<CategoryScreen>();
+    // CategoryScreen ke instance se controller already GetX pe global hai,
+    // isliye direct new instance nahi banana, sirf helper call karna hai.
+    return ListView(
+      children: [if (screen != null) screen._buildFormPaneColumn()],
     );
   }
 }
@@ -561,87 +600,6 @@ class _HelpText extends StatelessWidget {
     );
   }
 }
-
-// class _SegmentSwitch extends StatelessWidget {
-//   final RxBool valueListenable;
-//   final ValueChanged<bool> onChanged;
-//   const _SegmentSwitch({
-//     super.key,
-//     required this.valueListenable,
-//     required this.onChanged,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Obx(() {
-//       final v = valueListenable.value;
-//       return Container(
-//         height: 44,
-//         decoration: BoxDecoration(
-//           color: const Color(0xFFF8FAFC),
-//           borderRadius: BorderRadius.circular(12),
-//           border: Border.all(color: const Color(0xFFDDDFE3)),
-//         ),
-//         child: Row(
-//           children: [
-//             _segItem(
-//               label: 'Active',
-//               icon: Icons.check_circle,
-//               selected: v,
-//               onTap: () => onChanged(true),
-//             ),
-//             _segItem(
-//               label: 'Inactive',
-//               icon: Icons.pause_circle_filled_rounded,
-//               selected: !v,
-//               onTap: () => onChanged(false),
-//             ),
-//           ],
-//         ),
-//       );
-//     });
-//   }
-
-//   Expanded _segItem({
-//     required String label,
-//     required IconData icon,
-//     required bool selected,
-//     required VoidCallback onTap,
-//   }) {
-//     return Expanded(
-//       child: InkWell(
-//         onTap: onTap,
-//         borderRadius: BorderRadius.circular(12),
-//         child: AnimatedContainer(
-//           duration: const Duration(milliseconds: 160),
-//           padding: const EdgeInsets.symmetric(horizontal: 10),
-//           decoration: BoxDecoration(
-//             color: selected ? Colors.black : Colors.transparent,
-//             borderRadius: BorderRadius.circular(12),
-//           ),
-//           child: Row(
-//             mainAxisAlignment: MainAxisAlignment.center,
-//             children: [
-//               Icon(
-//                 icon,
-//                 size: 18,
-//                 color: selected ? Colors.white : const Color(0xFF6B7280),
-//               ),
-//               const SizedBox(width: 6),
-//               Text(
-//                 label,
-//                 style: TextStyle(
-//                   fontWeight: FontWeight.w700,
-//                   color: selected ? Colors.white : const Color(0xFF6B7280),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
 
 class _ImagePreview extends StatelessWidget {
   final Rxn<Uint8List> bytesRx;

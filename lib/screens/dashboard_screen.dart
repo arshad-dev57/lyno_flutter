@@ -1,15 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'package:lyno_cms/controller/chat_controller.dart';
 import 'package:lyno_cms/controller/dashboard_controller.dart';
+
 import 'package:lyno_cms/screens/Category_Screen.dart';
+import 'package:lyno_cms/screens/ads_screen.dart';
+import 'package:lyno_cms/screens/banner_screen.dart';
 import 'package:lyno_cms/screens/catelogue_screen.dart';
+import 'package:lyno_cms/screens/chat_screen.dart';
 import 'package:lyno_cms/screens/homescreen.dart';
 import 'package:lyno_cms/screens/order_screen.dart';
 import 'package:lyno_cms/screens/product_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final DashboardController controller = Get.put(DashboardController());
+
+  /// ChatController global register (permanent)
+  /// YAHAN REAL TOKEN + USER ID SET KARO
+  final ChatController chatController = Get.put(
+    ChatController(
+      token:
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGY3MzVjOTlmZWZlMGM5ODAxMGNhMDYiLCJpYXQiOjE3NjM3MjM4ODF9._PNTp9-Y-9JBU1vfgmYVBxF_MnAu7WpwOS-cnjK5-jo",
+      currentUserId: '68f735c99fefe0c98010ca06',
+    ),
+    permanent: true,
+  );
 
   DashboardScreen({Key? key}) : super(key: key);
 
@@ -18,11 +35,13 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
+          // ---------------- LEFT SIDEBAR ----------------
           Container(
             width: 250,
             color: Colors.white,
             child: Column(
               children: [
+                // Top profile / branding
                 Container(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -66,7 +85,8 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 const Divider(height: 1),
-                // Menu Items
+
+                // ---------------- MENU ITEMS ----------------
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -78,6 +98,11 @@ class DashboardScreen extends StatelessWidget {
                         1,
                         true,
                       ),
+                      _buildMenuItem(
+                        Icons.chat_bubble_outline,
+                        'Chats',
+                        7,
+                      ), // chat tab
                       _buildMenuItem(Icons.grid_view_outlined, 'Category', 2),
                       _buildMenuItem(
                         Icons.grid_view_outlined,
@@ -85,20 +110,18 @@ class DashboardScreen extends StatelessWidget {
                         3,
                       ),
                       _buildMenuItem(Icons.people_outline, 'products', 4),
-                      // _buildMenuItem(
-                      //   Icons.local_shipping_outlined,
-                      //   'Shipping',
-                      //   4,
-                      // ),
+                      _buildMenuItem(Icons.grid_view_outlined, 'Banner', 5),
+                      _buildMenuItem(Icons.grid_view_outlined, 'Ads', 6),
                       _buildMenuItem(
                         Icons.settings_outlined,
                         'Configuration',
-                        6,
+                        8,
                       ),
                     ],
                   ),
                 ),
-                // Storage Usage
+
+                // ---------------- STORAGE USAGE ----------------
                 Container(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -141,22 +164,32 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Main Content
+
+          // ---------------- RIGHT MAIN CONTENT ----------------
           Expanded(
             child: Obx(() {
-              if (controller.selectedIndex.value == 1) {
-                return OrdersScreen();
+              switch (controller.selectedIndex.value) {
+                case 1:
+                  return OrdersScreen();
+                case 2:
+                  return CatalogueScreen();
+                case 3:
+                  return CategoryScreen();
+                case 4:
+                  return ProductScreen();
+                case 5:
+                  return BannerScreen();
+                case 6:
+                  return AdsScreen();
+                case 7:
+                  // 🔥 Chat Screen (GetX + Socket integrated)
+                  return ChatScreen(
+                    // token: chatController.token,
+                    // currentUserId: chatController.currentUserId,
+                  );
+                default:
+                  return HomeScreen();
               }
-              if (controller.selectedIndex.value == 2) {
-                return CatalogueScreen();
-              }
-              if (controller.selectedIndex.value == 3) {
-                return CategoryScreen();
-              }
-              if (controller.selectedIndex.value == 4) {
-                return ProductScreen();
-              }
-              return HomeScreen();
             }),
           ),
         ],

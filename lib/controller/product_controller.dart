@@ -1,4 +1,3 @@
-// lib/controller/product_controller.dart
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -12,42 +11,31 @@ import 'package:lyno_cms/models/product_model.dart';
 class ProductController extends GetxController {
   static const String baseUrl = "https://lyno-shopping.vercel.app";
   // static const String baseUrl = "http://localhost:5000";
-
-  // observables
   final products = <Product>[].obs;
   final isLoading = false.obs;
   final isSubmitting = false.obs;
-
-  // ==== Text field controllers ====
   final titleCtrl = TextEditingController();
   final skuCtrl = TextEditingController();
   final brandCtrl = TextEditingController();
-
   final shortDescCtrl = TextEditingController();
   final descCtrl = TextEditingController();
-
   final mrpCtrl = TextEditingController();
   final saleCtrl = TextEditingController();
   final currencyCtrl = TextEditingController(text: "\$");
   final taxPercentCtrl = TextEditingController(text: "0");
-
   final stockQtyCtrl = TextEditingController(text: "95");
   final minOrderQtyCtrl = TextEditingController(text: "1");
   final maxOrderQtyCtrl = TextEditingController(text: "0");
-
   final tagsCtrl = TextEditingController();
   final seoTitleCtrl = TextEditingController();
   final seoDescCtrl = TextEditingController();
   final orderCtrl = TextEditingController(text: "0");
 
-  // category from dropdown
   final selectedCategoryId = RxnString();
 
-  // ==== Attributes dynamic list ====
   final attrKeyCtrls = <TextEditingController>[].obs;
   final attrValCtrls = <TextEditingController>[].obs;
 
-  // ==== Primary image (file picker) ====
   final pickedImageBytes = Rx<Uint8List?>(null);
   final pickedImageName = ''.obs;
 
@@ -66,7 +54,6 @@ class ProductController extends GetxController {
 
   @override
   void onClose() {
-    // main controllers
     titleCtrl.dispose();
     skuCtrl.dispose();
     brandCtrl.dispose();
@@ -84,7 +71,6 @@ class ProductController extends GetxController {
     seoDescCtrl.dispose();
     orderCtrl.dispose();
 
-    // attribute controllers (ONLY yahan dispose honge)
     for (final c in attrKeyCtrls) {
       c.dispose();
     }
@@ -125,8 +111,6 @@ class ProductController extends GetxController {
     }
   }
 
-  // ================= ATTRIBUTES HELPERS =================
-
   void addAttributeField() {
     attrKeyCtrls.add(TextEditingController());
     attrValCtrls.add(TextEditingController());
@@ -134,25 +118,18 @@ class ProductController extends GetxController {
 
   void removeAttributeField(int index) {
     if (index < 0 || index >= attrKeyCtrls.length) return;
-
-    // ❗ Yahan dispose NAHI kar rahe, sirf list se nikal rahe
     attrKeyCtrls.removeAt(index);
     attrValCtrls.removeAt(index);
-
-    // hamesha kam se kam 1 row rahe
     if (attrKeyCtrls.isEmpty) {
       addAttributeField();
     }
   }
-
-  // ================= IMAGE PICKER HELPERS =================
 
   Future<void> pickPrimaryImage() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       withData: true,
     );
-
     if (result != null && result.files.isNotEmpty) {
       final file = result.files.first;
       pickedImageBytes.value = file.bytes;
@@ -165,8 +142,6 @@ class ProductController extends GetxController {
     pickedImageName.value = '';
   }
 
-  // ================= UTILITIES =================
-
   List<String> _csvToList(String input) {
     return input
         .split(',')
@@ -174,8 +149,6 @@ class ProductController extends GetxController {
         .where((e) => e.isNotEmpty)
         .toList();
   }
-
-  // ================= ADD PRODUCT (multipart + 1 image) =================
 
   Future<void> addProduct() async {
     final title = titleCtrl.text.trim();
@@ -217,7 +190,6 @@ class ProductController extends GetxController {
       );
       return;
     }
-
     final mrp = double.tryParse(mrpText) ?? 0;
     final sale = double.tryParse(saleText) ?? 0;
     final taxPercent = double.tryParse(taxText) ?? 0;
@@ -225,10 +197,7 @@ class ProductController extends GetxController {
     final minOrderQty = int.tryParse(minQtyText) ?? 1;
     final maxOrderQty = int.tryParse(maxQtyText) ?? 0;
     final order = int.tryParse(orderText) ?? 0;
-
     final tags = _csvToList(tagsText);
-
-    // build attributes
     final attributes = <Map<String, String>>[];
     for (var i = 0; i < attrKeyCtrls.length; i++) {
       final k = attrKeyCtrls[i].text.trim();
@@ -237,9 +206,7 @@ class ProductController extends GetxController {
       if (k.isEmpty || v.isEmpty) continue;
       attributes.add({'key': k, 'value': v});
     }
-
     final String catId = selectedCategoryId.value!;
-
     final Map<String, dynamic> body = {
       "title": title,
       "sku": sku.isEmpty ? null : sku,
@@ -263,18 +230,13 @@ class ProductController extends GetxController {
       "category": catId,
       "categories": [catId],
     };
-
     try {
       isSubmitting.value = true;
-
       final hasImage = pickedImageBytes.value != null;
-
       http.Response resp;
-
       if (hasImage) {
         final uri = Uri.parse("$baseUrl/api/product/add");
         final request = http.MultipartRequest('POST', uri);
-
         body.forEach((key, value) {
           if (value == null) return;
           if (value is String || value is num || value is bool) {
@@ -283,7 +245,6 @@ class ProductController extends GetxController {
             request.fields[key] = jsonEncode(value);
           }
         });
-
         request.files.add(
           http.MultipartFile.fromBytes(
             'image',
@@ -294,7 +255,6 @@ class ProductController extends GetxController {
             contentType: MediaType('image', 'jpeg'),
           ),
         );
-
         final streamed = await request.send();
         resp = await http.Response.fromStream(streamed);
       } else {
@@ -304,15 +264,12 @@ class ProductController extends GetxController {
           body: jsonEncode(body),
         );
       }
-
       if (resp.statusCode == 201) {
         final data = jsonDecode(resp.body);
         final createdJson = data['data'] as Map<String, dynamic>;
         final createdProduct = Product.fromJson(createdJson);
-
         products.insert(0, createdProduct);
         clearForm();
-
         Get.snackbar(
           'Success',
           'Product add ho gaya',
@@ -342,24 +299,18 @@ class ProductController extends GetxController {
     brandCtrl.clear();
     shortDescCtrl.clear();
     descCtrl.clear();
-
     mrpCtrl.clear();
     saleCtrl.clear();
     currencyCtrl.text = "\$";
     taxPercentCtrl.text = "0";
-
     stockQtyCtrl.text = "95";
     minOrderQtyCtrl.text = "1";
     maxOrderQtyCtrl.text = "0";
-
     tagsCtrl.clear();
     seoTitleCtrl.clear();
     seoDescCtrl.clear();
     orderCtrl.text = "0";
-
     selectedCategoryId.value = null;
-
-    // attributes: sirf text clear karo, controllers zinda rakho
     for (final c in attrKeyCtrls) {
       c.clear();
     }

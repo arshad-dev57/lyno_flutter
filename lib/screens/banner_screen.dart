@@ -1,20 +1,20 @@
-// lib/screens/catalogue_screen.dart
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../models/category_group.dart';
-import '../controller/catalogue_controller.dart';
 
-class CatalogueScreen extends StatelessWidget {
-  CatalogueScreen({super.key});
-  final c = Get.put(CatalogueController());
+import '../controller/banner_controller.dart';
+import '../models/banner_model.dart';
+
+class BannerScreen extends StatelessWidget {
+  BannerScreen({super.key});
+  final c = Get.put(BannerController());
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       appBar: AppBar(
-        title: const Text('Categories'),
+        title: const Text('Banners'),
         elevation: 0,
         backgroundColor: const Color(0xFFF5F5F7),
         foregroundColor: Colors.black,
@@ -25,7 +25,7 @@ class CatalogueScreen extends StatelessWidget {
               final bool isDesktop = width >= 1080;
               if (!isDesktop) {
                 return IconButton(
-                  tooltip: 'Add group',
+                  tooltip: 'Add banner',
                   icon: const Icon(Icons.add),
                   onPressed: () => _openCreateDialog(context),
                 );
@@ -52,7 +52,7 @@ class CatalogueScreen extends StatelessWidget {
   // ============= LAYOUTS =============
 
   Widget _buildCompactLayout() {
-    return _buildGroupsPane(isWide: false);
+    return _buildBannersPane(isWide: false);
   }
 
   Widget _buildDesktopLayout() {
@@ -66,7 +66,7 @@ class CatalogueScreen extends StatelessWidget {
           child: ListView(shrinkWrap: true, children: [_buildFormColumn()]),
         ),
         const SizedBox(width: 16),
-        Expanded(child: _buildGroupsPane(isWide: isWide)),
+        Expanded(child: _buildBannersPane(isWide: isWide)),
       ],
     );
   }
@@ -112,24 +112,73 @@ class CatalogueScreen extends StatelessWidget {
       children: [
         _SectionCard(
           icon: Icons.add_box_outlined,
-          title: 'Create Group',
+          title: 'Create Banner',
           subtitle:
-              'Add a category group with title and image for your catalogue.',
+              'Add a banner with title, link and image for your home page.',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const _FieldLabel('Title'),
               const SizedBox(height: 6),
               TextField(
-                decoration: _inputDecor('e.g. “Fiction Books”').copyWith(
+                controller: c.titleCtrl,
+                decoration: _inputDecor('e.g. "Big Summer Sale"').copyWith(
                   prefixIcon: const Icon(
                     Icons.title,
                     size: 20,
                     color: Color(0xFF4B5563),
                   ),
                 ),
-                onChanged: (v) => c.title.value = v,
               ),
+              // const SizedBox(height: 12),
+              // const _FieldLabel('Link URL (optional)'),
+              // const SizedBox(height: 6),
+              // TextField(
+              //   controller: c.linkCtrl,
+              //   decoration: _inputDecor('https://yourshop.com/sale').copyWith(
+              //     prefixIcon: const Icon(
+              //       Icons.link,
+              //       size: 20,
+              //       color: Color(0xFF4B5563),
+              //     ),
+              //   ),
+              // ),
+              // const SizedBox(height: 12),
+              // Row(
+              //   children: [
+              //     Expanded(
+              //       child: Column(
+              //         crossAxisAlignment: CrossAxisAlignment.start,
+              //         children: [
+              //           const _FieldLabel('Position'),
+              //           const SizedBox(height: 6),
+              //           TextField(
+              //             controller: c.positionCtrl,
+              //             keyboardType: TextInputType.number,
+              //             decoration: _inputDecor('0,1,2...'),
+              //           ),
+              //         ],
+              //       ),
+              //     ),
+              //     const SizedBox(width: 12),
+              //     Expanded(
+              //       child: Obx(
+              //         () => SwitchListTile.adaptive(
+              //           contentPadding: EdgeInsets.zero,
+              //           title: const Text(
+              //             'Active',
+              //             style: TextStyle(
+              //               fontSize: 13,
+              //               fontWeight: FontWeight.w600,
+              //             ),
+              //           ),
+              //           value: c.isActive.value,
+              //           onChanged: (val) => c.isActive.value = val,
+              //         ),
+              //       ),
+              //     ),
+              //   ],
+              // ),
             ],
           ),
         ),
@@ -137,29 +186,16 @@ class CatalogueScreen extends StatelessWidget {
         _SectionCard(
           icon: Icons.image_outlined,
           title: 'Image',
-          subtitle: 'Upload a file or paste a direct URL for the group hero.',
+          subtitle: 'Pick a banner image (recommended wide / hero size).',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _FieldLabel('Image URL (optional)'),
-              const SizedBox(height: 6),
-              TextField(
-                decoration: _inputDecor('https://…').copyWith(
-                  prefixIcon: const Icon(
-                    Icons.link,
-                    size: 20,
-                    color: Color(0xFF4B5563),
-                  ),
-                ),
-                onChanged: (v) => c.heroImageUrl.value = v,
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              const _FieldLabel('Banner Image'),
+              const SizedBox(height: 8),
+              Row(
                 children: [
                   ElevatedButton.icon(
-                    onPressed: () => c.pickWebImage(),
+                    onPressed: c.pickImage,
                     icon: const Icon(Icons.upload_file, size: 18),
                     label: const Text(
                       'Choose File',
@@ -178,10 +214,11 @@ class CatalogueScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Obx(
-                    () => c.pickedBytesRx.value != null
+                    () => c.pickedBytes.value != null
                         ? TextButton.icon(
-                            onPressed: () => c.clearPicked(),
+                            onPressed: c.clearPicked,
                             icon: const Icon(Icons.close, size: 18),
                             label: const Text('Clear'),
                           )
@@ -190,13 +227,10 @@ class CatalogueScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _ImagePreview(
-                heroUrlRx: c.heroImageUrl,
-                bytesRx: c.pickedBytesRx,
-              ),
+              _ImagePreview(controller: c),
               const SizedBox(height: 8),
               const Text(
-                'Note: Backend needs a file when creating a group. URL is optional.',
+                'Note: Image is required when creating a banner.',
                 style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
               ),
             ],
@@ -207,10 +241,10 @@ class CatalogueScreen extends StatelessWidget {
           () => SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: c.saving.value
+              onPressed: c.isSaving.value
                   ? null
                   : () async {
-                      if (c.title.value.trim().isEmpty) {
+                      if (c.titleCtrl.text.trim().isEmpty) {
                         Get.snackbar(
                           'Missing',
                           'Title is required',
@@ -218,10 +252,18 @@ class CatalogueScreen extends StatelessWidget {
                         );
                         return;
                       }
-                      await c.createGroup();
+                      if (c.pickedBytes.value == null) {
+                        Get.snackbar(
+                          'Missing',
+                          'Image is required',
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                        return;
+                      }
+                      await c.createBanner();
                       onSaved?.call();
                     },
-              icon: c.saving.value
+              icon: c.isSaving.value
                   ? const SizedBox(
                       height: 18,
                       width: 18,
@@ -232,7 +274,7 @@ class CatalogueScreen extends StatelessWidget {
                     )
                   : const Icon(Icons.save_outlined, size: 18),
               label: Text(
-                c.saving.value ? '' : 'Save Group',
+                c.isSaving.value ? '' : 'Save Banner',
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
@@ -257,15 +299,15 @@ class CatalogueScreen extends StatelessWidget {
     );
   }
 
-  // ============= RIGHT: GROUPS GRID (REUSED) =============
+  // ============= RIGHT: BANNERS GRID (REUSED) =============
 
-  Widget _buildGroupsPane({required bool isWide}) {
+  Widget _buildBannersPane({required bool isWide}) {
     return Obx(() {
       if (c.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (c.groups.isEmpty) {
-        return const Center(child: Text('No category groups yet.'));
+      if (c.banners.isEmpty) {
+        return const Center(child: Text('No banners yet.'));
       }
 
       final cross = isWide ? 3 : 2;
@@ -278,15 +320,14 @@ class CatalogueScreen extends StatelessWidget {
           mainAxisSpacing: 16,
           childAspectRatio: 0.82,
         ),
-        itemCount: c.groups.length,
+        itemCount: c.banners.length,
         itemBuilder: (_, i) {
-          final g = c.groups[i];
-          return _GroupCard(
-            g: g,
-            onToggle: () =>
-                c.updateGroup(g, newIsActive: !g.isActive, withImage: false),
-            onDelete: () => _confirmDelete(g, c),
-            onEdit: () => _openEditDialog(g, c),
+          final b = c.banners[i];
+          return _BannerCard(
+            banner: b,
+            onToggle: () => c.toggleActiveStatus(b.id, !b.isActive),
+            onDelete: () => _confirmDelete(b, c),
+            onEdit: () => _openEditDialog(b, c),
           );
         },
       );
@@ -294,26 +335,27 @@ class CatalogueScreen extends StatelessWidget {
   }
 
   // ===== dialogs =====
-  void _confirmDelete(CategoryGroup g, CatalogueController c) {
+  void _confirmDelete(BannerModel b, BannerController c) {
     Get.defaultDialog(
       title: 'Delete',
-      middleText:
-          'Delete "${g.title}"?\n(Note: backend blocks if categories exist)',
+      middleText: 'Delete "${b.title}"?',
       textCancel: 'Cancel',
       textConfirm: 'Delete',
       confirmTextColor: Colors.white,
       onConfirm: () async {
         Get.back();
-        await c.deleteGroup(g);
+        await c.deleteBanner(b.id);
       },
     );
   }
 
-  void _openEditDialog(CategoryGroup g, CatalogueController c) {
-    final t = TextEditingController(text: g.title);
-    final url = TextEditingController(text: g.heroImage ?? '');
-    final urlVN = ValueNotifier<String>(url.text);
-    url.addListener(() => urlVN.value = url.text);
+  void _openEditDialog(BannerModel b, BannerController c) {
+    final titleController = TextEditingController(text: b.title);
+    final linkController = TextEditingController(text: b.linkUrl ?? '');
+    final positionController = TextEditingController(
+      text: b.position.toString(),
+    );
+    final isActiveNotifier = ValueNotifier<bool>(b.isActive);
 
     Get.dialog(
       Dialog(
@@ -324,29 +366,65 @@ class CatalogueScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Edit Group',
+                  'Edit Banner',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: t, decoration: _inputDecor('Title')),
+                TextField(
+                  controller: titleController,
+                  decoration: _inputDecor('Title'),
+                ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: url,
-                  decoration: _inputDecor('Hero Image URL'),
+                  controller: linkController,
+                  decoration: _inputDecor('Link URL'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: positionController,
+                        keyboardType: TextInputType.number,
+                        decoration: _inputDecor('Position'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: isActiveNotifier,
+                        builder: (_, isActive, __) => SwitchListTile.adaptive(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Active',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          value: isActive,
+                          onChanged: (val) => isActiveNotifier.value = val,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
                     onPressed: () async {
-                      await c.pickWebImage();
+                      await c.pickImage();
                       setSt(() {});
                     },
                     icon: const Icon(Icons.upload_file),
                     label: const Text('Pick file'),
                   ),
                 ),
-                _DialogImagePreview(dialogUrl: urlVN, bytesRx: c.pickedBytesRx),
+                _DialogImagePreview(
+                  bytesRx: c.pickedBytes,
+                  imageUrl: b.imageUrl,
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -360,29 +438,26 @@ class CatalogueScreen extends StatelessWidget {
                     const Spacer(),
                     Obx(
                       () => ElevatedButton(
-                        onPressed: c.saving.value
+                        onPressed: c.isSaving.value
                             ? null
                             : () async {
-                                final hasPicked =
-                                    c.pickedBytesRx.value != null &&
-                                    c.pickedBytesRx.value!.isNotEmpty;
-                                if (hasPicked) {
-                                  await c.updateGroup(
-                                    g,
-                                    newTitle: t.text.trim(),
-                                    withImage: true,
-                                  );
-                                } else {
-                                  await c.updateGroup(
-                                    g,
-                                    newTitle: t.text.trim(),
-                                    withImage: false,
-                                  );
-                                }
+                                final hasPicked = c.pickedBytes.value != null;
+                                await c.updateBanner(
+                                  b,
+                                  newTitle: titleController.text.trim(),
+                                  newLinkUrl: linkController.text.trim(),
+                                  newPosition:
+                                      int.tryParse(
+                                        positionController.text.trim(),
+                                      ) ??
+                                      b.position,
+                                  newIsActive: isActiveNotifier.value,
+                                  withImage: hasPicked,
+                                );
                                 c.clearPicked();
                                 Get.back();
                               },
-                        child: c.saving.value
+                        child: c.isSaving.value
                             ? const SizedBox(
                                 height: 18,
                                 width: 18,
@@ -520,16 +595,8 @@ class _FieldLabel extends StatelessWidget {
 // =================== Preview & Cards ===================
 
 class _ImagePreview extends StatelessWidget {
-  final RxString? heroUrlRx;
-  final String? urlString;
-  final Rxn<Uint8List>? bytesRx;
-
-  const _ImagePreview({
-    super.key,
-    this.heroUrlRx,
-    this.urlString,
-    this.bytesRx,
-  });
+  final BannerController controller;
+  const _ImagePreview({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -549,8 +616,8 @@ class _ImagePreview extends StatelessWidget {
     );
 
     return Obx(() {
-      final picked = bytesRx?.value;
-      if (picked != null && picked.isNotEmpty) {
+      final Uint8List? bytes = controller.pickedBytes.value;
+      if (bytes != null && bytes.isNotEmpty) {
         return Container(
           height: 170,
           width: double.infinity,
@@ -559,23 +626,8 @@ class _ImagePreview extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFE5E7EB)),
           ),
-          child: Image.memory(picked, fit: BoxFit.cover),
+          child: Image.memory(bytes, fit: BoxFit.cover),
         );
-      }
-
-      if (heroUrlRx != null) {
-        final url = heroUrlRx!.value.trim();
-        if (url.isNotEmpty) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.network(
-              url,
-              height: 170,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          );
-        }
       }
 
       return box;
@@ -584,10 +636,10 @@ class _ImagePreview extends StatelessWidget {
 }
 
 class _DialogImagePreview extends StatelessWidget {
-  final ValueNotifier<String> dialogUrl;
   final Rxn<Uint8List>? bytesRx;
+  final String imageUrl;
 
-  const _DialogImagePreview({super.key, required this.dialogUrl, this.bytesRx});
+  const _DialogImagePreview({super.key, this.bytesRx, required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -621,37 +673,34 @@ class _DialogImagePreview extends StatelessWidget {
         );
       }
 
-      return ValueListenableBuilder<String>(
-        valueListenable: dialogUrl,
-        builder: (_, url, __) {
-          final u = url.trim();
-          if (u.isNotEmpty) {
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                u,
-                height: 140,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            );
-          }
-          return box;
-        },
-      );
+      // Show existing image if no new image picked
+      if (imageUrl.isNotEmpty) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.network(
+            imageUrl,
+            height: 140,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => box,
+          ),
+        );
+      }
+
+      return box;
     });
   }
 }
 
-class _GroupCard extends StatelessWidget {
-  final CategoryGroup g;
+class _BannerCard extends StatelessWidget {
+  final BannerModel banner;
   final VoidCallback onToggle;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
 
-  const _GroupCard({
+  const _BannerCard({
     super.key,
-    required this.g,
+    required this.banner,
     required this.onToggle,
     required this.onDelete,
     required this.onEdit,
@@ -660,7 +709,7 @@ class _GroupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onEdit,
+      // onTap: onEdit,
       onDoubleTap: onToggle,
       onLongPress: onDelete,
       child: Card(
@@ -679,8 +728,27 @@ class _GroupCard extends StatelessWidget {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(18),
                 ),
-                child: (g.heroImage != null && g.heroImage!.trim().isNotEmpty)
-                    ? Image.network(g.heroImage!, fit: BoxFit.cover)
+                child: banner.imageUrl.isNotEmpty
+                    ? Image.network(
+                        banner.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Color(0xFFE5E7EB), Color(0xFFF4F4F5)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              color: Color(0xFF9CA3AF),
+                              size: 32,
+                            ),
+                          ),
+                        ),
+                      )
                     : Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(
@@ -701,16 +769,53 @@ class _GroupCard extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Text(
-                g.title,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF111827),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    banner.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      InkWell(
+                        onTap: () => onDelete(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            // color: banner.isActive
+                            //     ? const Color(0xFFE7F8F0)
+                            //     : const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Icon(
+                            Icons.delete,
+                            color: Color(0xFF16A34A),
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Pos: ${banner.position}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
