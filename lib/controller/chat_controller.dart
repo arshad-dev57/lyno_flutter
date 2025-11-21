@@ -12,7 +12,7 @@ import '../models/chat_models.dart';
 
 class ChatController extends GetxController {
   // Apna backend URL
-  static const String baseUrl = 'http://192.168.100.189:5000';
+  static const String baseUrl = 'https://lyno-shopping.vercel.app';
 
   final String token;
   final String currentUserId;
