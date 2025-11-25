@@ -6,12 +6,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-
 import '../models/chat_models.dart';
 
 class ChatController extends GetxController {
-  // Apna backend URL
   static const String baseUrl = 'https://lyno-shopping.vercel.app';
 
   final String token;
@@ -106,15 +105,11 @@ class ChatController extends GetxController {
     });
   }
 
-  /// common handler: dedupe + conversations update
   void _handleIncomingMessage(MessageModel msg) {
     final currentConvoId = selectedConversation.value?.id;
 
-    // 1) messages list me sirf tab add karo jab woh convo open ho
     if (currentConvoId == msg.conversationId) {
-      final alreadyIndex = messages.indexWhere(
-        (m) => m.id == msg.id,
-      ); // dedupe by id
+      final alreadyIndex = messages.indexWhere((m) => m.id == msg.id);
 
       if (alreadyIndex == -1) {
         messages.add(msg);
@@ -123,7 +118,6 @@ class ChatController extends GetxController {
       }
     }
 
-    // 2) conversations list ka last message update
     final idx = conversations.indexWhere((c) => c.id == msg.conversationId);
     if (idx != -1) {
       final updated = conversations[idx].copyWith(
@@ -137,17 +131,20 @@ class ChatController extends GetxController {
     }
   }
 
-  Map<String, String> get _headers => {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $token',
-  };
-
   Future<void> fetchUsers() async {
     try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      final mytoken = preferences.getString("token");
       isLoadingUsers.value = true;
 
       final uri = Uri.parse('$baseUrl/api/chat/users');
-      final res = await http.get(uri, headers: _headers);
+      final res = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $mytoken',
+        },
+      );
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
         final List rawList = (body['data'] ?? body['users'] ?? []) as List;
@@ -173,8 +170,18 @@ class ChatController extends GetxController {
       final uri = Uri.parse(
         '$baseUrl/api/chat/conversations?userId=$currentUserId',
       );
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      final mytoken = preferences.getString("token");
+      print("token is here $token");
+      final res = await http.get(
+        uri,
 
-      final res = await http.get(uri, headers: _headers);
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $mytoken',
+        },
+      );
 
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -201,7 +208,7 @@ class ChatController extends GetxController {
 
   Future<void> selectConversation(ConversationModel convo) async {
     selectedConversation.value = convo;
-    isOtherTyping.value = false; // naya convo -> reset typing flag
+    isOtherTyping.value = false;
     await fetchMessages(convo.id);
   }
 
@@ -223,13 +230,18 @@ class ChatController extends GetxController {
   /// POST /api/chat/conversation { receiverId, senderId }
   Future<void> createConversationWithUser(ChatUserMini user) async {
     try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      final mytoken = preferences.getString("token");
       final uri = Uri.parse('$baseUrl/api/chat/conversation');
 
       final body = {'receiverId': user.id, 'senderId': currentUserId};
 
       final res = await http.post(
         uri,
-        headers: _headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $mytoken',
+        },
         body: jsonEncode(body),
       );
 
@@ -265,15 +277,22 @@ class ChatController extends GetxController {
     }
   }
 
-  // ---------- API: MESSAGES ----------
   Future<void> fetchMessages(String conversationId) async {
     try {
       isLoadingMessages.value = true;
-
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      final mytoken = preferences.getString("token");
+      print("mytoken $mytoken");
       final uri = Uri.parse(
         '$baseUrl/api/chat/$conversationId/messages?page=1&limit=50',
       );
-      final res = await http.get(uri, headers: _headers);
+      final res = await http.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $mytoken',
+        },
+      );
 
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -316,7 +335,6 @@ class ChatController extends GetxController {
       'from': currentUserId,
     });
 
-    // agar 2 sec tak kuch type na kare to stopTyping auto
     _typingTimer?.cancel();
     _typingTimer = Timer(const Duration(seconds: 2), () {
       socket.emit('stopTyping', {
@@ -327,7 +345,6 @@ class ChatController extends GetxController {
     });
   }
 
-  /// POST /api/chat/message { conversationId, receiverId, text, senderId }
   Future<void> sendMessage() async {
     final text = messageController.text.trim();
     final convo = selectedConversation.value;
@@ -335,6 +352,9 @@ class ChatController extends GetxController {
     if (text.isEmpty || convo == null) return;
 
     try {
+      SharedPreferences preferences = await SharedPreferences.getInstance();
+      final mytoken = preferences.getString("token");
+
       sending.value = true;
 
       final body = {
@@ -349,7 +369,10 @@ class ChatController extends GetxController {
       final uri = Uri.parse('$baseUrl/api/chat/message');
       final res = await http.post(
         uri,
-        headers: _headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $mytoken',
+        },
         body: jsonEncode(body),
       );
 
@@ -359,10 +382,8 @@ class ChatController extends GetxController {
           Map<String, dynamic>.from(data['data']),
         );
 
-        // common handler (dedupe + list update)
         _handleIncomingMessage(msg);
 
-        // message gaya -> typing band
         final toId = convo.participant.id;
         socket.emit('stopTyping', {
           'conversationId': convo.id,
