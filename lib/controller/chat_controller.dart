@@ -8,16 +8,16 @@ import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+
 import '../models/chat_models.dart';
 
 class ChatController extends GetxController {
   static const String baseUrl = 'https://lyno-shopping.vercel.app';
 
-  final String token;
-  final String currentUserId;
+  String token = "";
+  String currentUserId = "";
 
-  ChatController({required this.token, required this.currentUserId});
-
+  /// STATE
   final RxList<ChatUserMini> users = <ChatUserMini>[].obs;
   final RxList<ConversationModel> conversations = <ConversationModel>[].obs;
   final RxList<MessageModel> messages = <MessageModel>[].obs;
@@ -39,6 +39,25 @@ class ChatController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    _loadCredentials(); // Load token & userId
+  }
+
+  /// Load token + userId first before making API calls
+  Future<void> _loadCredentials() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    token = prefs.getString("token") ?? "";
+    currentUserId = prefs.getString("userId") ?? "";
+
+    debugPrint("🔥 Loaded Token: $token");
+    debugPrint("🔥 Loaded UserId: $currentUserId");
+
+    if (token.isEmpty || currentUserId.isEmpty) {
+      debugPrint("❌ Token or UserId missing in SharedPreferences!");
+      return;
+    }
+
+    /// After loading token or userId, start everything
     _connectSocket();
     fetchUsers();
     fetchConversations();
@@ -48,10 +67,13 @@ class ChatController extends GetxController {
   void onClose() {
     messageController.dispose();
     _typingTimer?.cancel();
-    socket.dispose();
+    try {
+      socket.dispose();
+    } catch (_) {}
     super.onClose();
   }
 
+  // SOCKET CONNECTION
   void _connectSocket() {
     socket = IO.io(
       baseUrl,
@@ -64,28 +86,26 @@ class ChatController extends GetxController {
     socket.connect();
 
     socket.onConnect((_) {
-      debugPrint('Socket connected');
-      socket.emit('join', currentUserId);
+      debugPrint("Socket Connected");
+      socket.emit("join", currentUserId);
     });
 
-    socket.onDisconnect((_) {
-      debugPrint('Socket disconnected');
-    });
+    socket.onDisconnect((_) => debugPrint("Socket Disconnected"));
 
-    socket.on('newMessage', (data) {
+    socket.on("newMessage", (data) {
       final msg = MessageModel.fromJson(Map<String, dynamic>.from(data));
       _handleIncomingMessage(msg);
     });
 
-    socket.on('messageSent', (data) {
+    socket.on("messageSent", (data) {
       final msg = MessageModel.fromJson(Map<String, dynamic>.from(data));
       _handleIncomingMessage(msg);
     });
 
-    socket.on('typing', (data) {
+    socket.on("typing", (data) {
       final map = Map<String, dynamic>.from(data ?? {});
-      final convoId = map['conversationId']?.toString();
-      final fromId = map['from']?.toString();
+      final convoId = map["conversationId"]?.toString();
+      final fromId = map["from"]?.toString();
 
       if (selectedConversation.value?.id == convoId &&
           selectedConversation.value?.participant.id == fromId) {
@@ -93,10 +113,10 @@ class ChatController extends GetxController {
       }
     });
 
-    socket.on('stopTyping', (data) {
+    socket.on("stopTyping", (data) {
       final map = Map<String, dynamic>.from(data ?? {});
-      final convoId = map['conversationId']?.toString();
-      final fromId = map['from']?.toString();
+      final convoId = map["conversationId"]?.toString();
+      final fromId = map["from"]?.toString();
 
       if (selectedConversation.value?.id == convoId &&
           selectedConversation.value?.participant.id == fromId) {
@@ -105,94 +125,69 @@ class ChatController extends GetxController {
     });
   }
 
-  void _handleIncomingMessage(MessageModel msg) {
-    final currentConvoId = selectedConversation.value?.id;
-
-    if (currentConvoId == msg.conversationId) {
-      final alreadyIndex = messages.indexWhere((m) => m.id == msg.id);
-
-      if (alreadyIndex == -1) {
-        messages.add(msg);
-      } else {
-        messages[alreadyIndex] = msg;
-      }
-    }
-
-    final idx = conversations.indexWhere((c) => c.id == msg.conversationId);
-    if (idx != -1) {
-      final updated = conversations[idx].copyWith(
-        lastMessage: msg.text,
-        lastMessageAt: msg.createdAt,
-      );
-      conversations[idx] = updated;
-      conversations.refresh();
-    } else {
-      fetchConversations();
-    }
-  }
-
+  // ===== FETCH USERS =====
   Future<void> fetchUsers() async {
     try {
-      SharedPreferences preferences = await SharedPreferences.getInstance();
-      final mytoken = preferences.getString("token");
       isLoadingUsers.value = true;
 
-      final uri = Uri.parse('$baseUrl/api/chat/users');
+      final uri = Uri.parse("$baseUrl/api/chat/users");
       final res = await http.get(
         uri,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $mytoken',
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
         },
       );
+
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
-        final List rawList = (body['data'] ?? body['users'] ?? []) as List;
-        final list = rawList
+        final List raw = (body['data'] ?? body['users'] ?? []) as List;
+
+        final list = raw
             .map((e) => ChatUserMini.fromJson(Map<String, dynamic>.from(e)))
             .where((u) => u.id != currentUserId)
             .toList();
+
         users.assignAll(list);
       } else {
         debugPrint('fetchUsers error: ${res.statusCode} ${res.body}');
       }
     } catch (e) {
-      debugPrint('fetchUsers exception: $e');
+      debugPrint("fetchUsers ERROR: $e");
     } finally {
       isLoadingUsers.value = false;
     }
   }
 
+  // ===== FETCH CONVERSATIONS =====
   Future<void> fetchConversations() async {
     try {
       isLoadingConversations.value = true;
 
       final uri = Uri.parse(
-        '$baseUrl/api/chat/conversations?userId=$currentUserId',
+        "$baseUrl/api/chat/conversations?userId=$currentUserId",
       );
-      final SharedPreferences preferences =
-          await SharedPreferences.getInstance();
-      final mytoken = preferences.getString("token");
-      print("token is here $token");
+
       final res = await http.get(
         uri,
-
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $mytoken',
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
         },
       );
 
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body) as Map<String, dynamic>;
-        final List list = body['data'] ?? [];
+        final List list = body["data"] ?? [];
 
         final parsed = list
             .map(
               (e) => ConversationModel.fromJson(Map<String, dynamic>.from(e)),
             )
             .toList();
+
         conversations.assignAll(parsed);
+
         if (parsed.isNotEmpty && selectedConversation.value == null) {
           selectConversation(parsed.first);
         }
@@ -200,7 +195,7 @@ class ChatController extends GetxController {
         debugPrint('fetchConversations error: ${res.statusCode} ${res.body}');
       }
     } catch (e) {
-      debugPrint('fetchConversations exception: $e');
+      debugPrint("fetchConversations ERROR: $e");
     } finally {
       isLoadingConversations.value = false;
     }
@@ -212,12 +207,15 @@ class ChatController extends GetxController {
     await fetchMessages(convo.id);
   }
 
+  /// === This method fixes the error you saw ===
+  /// Find conversation by participant user id
   ConversationModel? findConversationWithUser(String userId) {
     final idx = conversations.indexWhere((c) => c.participant.id == userId);
     if (idx == -1) return null;
     return conversations[idx];
   }
 
+  // ===== OPEN / CREATE CONVERSATION =====
   Future<void> openConversationWithUser(ChatUserMini user) async {
     final existing = findConversationWithUser(user.id);
     if (existing != null) {
@@ -227,20 +225,19 @@ class ChatController extends GetxController {
     await createConversationWithUser(user);
   }
 
-  /// POST /api/chat/conversation { receiverId, senderId }
   Future<void> createConversationWithUser(ChatUserMini user) async {
     try {
-      SharedPreferences preferences = await SharedPreferences.getInstance();
-      final mytoken = preferences.getString("token");
-      final uri = Uri.parse('$baseUrl/api/chat/conversation');
+      final uri = Uri.parse("$baseUrl/api/chat/conversation");
 
-      final body = {'receiverId': user.id, 'senderId': currentUserId};
+      final body = {"receiverId": user.id, "senderId": currentUserId};
+
+      debugPrint("createConversation body: $body");
 
       final res = await http.post(
         uri,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $mytoken',
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
         },
         body: jsonEncode(body),
       );
@@ -273,24 +270,24 @@ class ChatController extends GetxController {
         );
       }
     } catch (e) {
-      debugPrint('createConversationWithUser exception: $e');
+      debugPrint("createConversation ERROR: $e");
     }
   }
 
+  // ===== FETCH MESSAGES =====
   Future<void> fetchMessages(String conversationId) async {
     try {
       isLoadingMessages.value = true;
-      SharedPreferences preferences = await SharedPreferences.getInstance();
-      final mytoken = preferences.getString("token");
-      print("mytoken $mytoken");
+
       final uri = Uri.parse(
-        '$baseUrl/api/chat/$conversationId/messages?page=1&limit=50',
+        "$baseUrl/api/chat/$conversationId/messages?page=1&limit=50",
       );
+
       final res = await http.get(
         uri,
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $mytoken',
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
         },
       );
 
@@ -305,13 +302,13 @@ class ChatController extends GetxController {
         debugPrint('fetchMessages error: ${res.statusCode} ${res.body}');
       }
     } catch (e) {
-      debugPrint('fetchMessages exception: $e');
+      debugPrint("fetchMessages ERROR: $e");
     } finally {
       isLoadingMessages.value = false;
     }
   }
 
-  /// user typing handler (TextField.onChanged se call hoga)
+  // ===== TYPING HANDLER =====
   void handleInputChange(String value) {
     final convo = selectedConversation.value;
     if (convo == null) return;
@@ -345,6 +342,7 @@ class ChatController extends GetxController {
     });
   }
 
+  // ===== SEND MESSAGE =====
   Future<void> sendMessage() async {
     final text = messageController.text.trim();
     final convo = selectedConversation.value;
@@ -352,9 +350,6 @@ class ChatController extends GetxController {
     if (text.isEmpty || convo == null) return;
 
     try {
-      SharedPreferences preferences = await SharedPreferences.getInstance();
-      final mytoken = preferences.getString("token");
-
       sending.value = true;
 
       final body = {
@@ -371,7 +366,7 @@ class ChatController extends GetxController {
         uri,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $mytoken',
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode(body),
       );
@@ -398,6 +393,33 @@ class ChatController extends GetxController {
       debugPrint('sendMessage exception: $e');
     } finally {
       sending.value = false;
+    }
+  }
+
+  // ===== HANDLE INCOMING MESSAGE =====
+  void _handleIncomingMessage(MessageModel msg) {
+    final currentConvoId = selectedConversation.value?.id;
+
+    if (currentConvoId == msg.conversationId) {
+      final alreadyIndex = messages.indexWhere((m) => m.id == msg.id);
+
+      if (alreadyIndex == -1) {
+        messages.add(msg);
+      } else {
+        messages[alreadyIndex] = msg;
+      }
+    }
+
+    final idx = conversations.indexWhere((c) => c.id == msg.conversationId);
+    if (idx != -1) {
+      final updated = conversations[idx].copyWith(
+        lastMessage: msg.text,
+        lastMessageAt: msg.createdAt,
+      );
+      conversations[idx] = updated;
+      conversations.refresh();
+    } else {
+      fetchConversations();
     }
   }
 }

@@ -29,7 +29,6 @@ class LoginPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Email Field
             TextField(
               controller: emailCtrl,
               keyboardType: TextInputType.emailAddress,

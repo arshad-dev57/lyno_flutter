@@ -21,18 +21,20 @@ class AuthController extends GetxController {
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
         String token = data['token'];
+        String userId =
+            data['user']['id']; // Extracting user id from the response
+
         print('Token received: $token');
+        print('User ID received: $userId');
 
         SharedPreferences preferences = await SharedPreferences.getInstance();
-        final saved = await preferences.setString("token", token);
-        print("Saved token: $saved");
+        await preferences.setString("token", token);
+        await preferences.setString("userId", userId); // Save userId
 
-        // Navigate to Dashboard after successful login
-        Get.offAll(
-          () => DashboardScreen(),
-        ); // Use offAll to clear the stack and go to Dashboard
+        print("Saved token: $token");
+        print("Saved userId: $userId");
+        Get.to(DashboardScreen());
       } else {
-        // Print the error details for debugging
         print('Login failed with status code: ${response.statusCode}');
         Get.snackbar(
           'Error',
@@ -41,7 +43,6 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      // Print the error for debugging
       print('Error occurred: $e');
       Get.snackbar(
         'Error $e',

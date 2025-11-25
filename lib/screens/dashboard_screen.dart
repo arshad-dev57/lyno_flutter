@@ -17,11 +17,7 @@ class DashboardScreen extends StatelessWidget {
   final DashboardController controller = Get.put(DashboardController());
 
   final ChatController chatController = Get.put(
-    ChatController(
-      token:
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGY3MzVjOTlmZWZlMGM5ODAxMGNhMDYiLCJpYXQiOjE3NjM3MjM4ODF9._PNTp9-Y-9JBU1vfgmYVBxF_MnAu7WpwOS-cnjK5-jo",
-      currentUserId: '68f735c99fefe0c98010ca06',
-    ),
+    ChatController(),
     permanent: true,
   );
 
