@@ -3,15 +3,13 @@ import 'package:http/http.dart' as http;
 import 'package:lyno_cms/screens/dashboard_screen.dart';
 import 'dart:convert';
 
-import 'package:lyno_cms/services/api_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthController extends GetxController {
-  final String apiUrl = ApiService.baseUrl;
+  final String apiUrl = "https://lyno-shopping.vercel.app";
 
   Future<void> Login(String email, String password) async {
     try {
-      // Create a POST request
       final response = await http.post(
         Uri.parse("$apiUrl/api/auth/login"),
         headers: {"Content-Type": "application/json"},

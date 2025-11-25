@@ -50,7 +50,6 @@ class LoginPage extends StatelessWidget {
               style: TextStyle(color: Colors.white),
             ),
             const SizedBox(height: 20),
-            // Password Field
             TextField(
               controller: passCtrl,
               obscureText: true,
